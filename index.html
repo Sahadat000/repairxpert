@@ -220,12 +220,12 @@ async function setLocks(){
 function homeP(){
   const d=today(),m=d.slice(0,7)+'-01',S=DB.stu.map(sSum),J=DB.jobs,inc=sumTx('income',m,d),exp=sumTx('expense',m,d);
   const mini=u=>{const i=sumTx('income',m,d,u),e=sumTx('expense',m,d,u);return `${t('Monthly Income')}: ${taka(i)}<br>${t('Monthly Expenses')}: ${taka(e)}<br><b>${t('Net Profit')}: ${taka(i-e)}</b>`};
-  return `<h2>${t('Home')}</h2>${role==='admin'&&!(DB.locks&&DB.locks.training&&DB.locks.service)?'<div class="warn">Set Dashboard, Training, Service and Admin passwords: Common / Admin → Users &amp; Security</div>':''}
+  return `<h2>${t('Home')}</h2>${role==='admin'&&!(DB.locks&&DB.locks.home&&DB.locks.training&&DB.locks.service&&DB.locks.admin)?'<div class="warn">Set Dashboard, Training, Service and Admin passwords: Common / Admin → Users &amp; Security</div>':''}
   <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr))">
   <div class="card" style="cursor:pointer;padding:22px;background:linear-gradient(135deg,#0e7490,#1d4ed8);color:#fff;border:0" onclick="enter('home')"><h3 style="font-size:26px">📊 ${t('Dashboard')}</h3><p>${t('Monthly Income')} · ${t('Monthly Expenses')} · ${t('Net Profit')}</p><small>${DB.locks&&DB.locks.home?'🔒 Password protected':''}</small></div>
   <div class="card rd" style="cursor:pointer;padding:22px" onclick="enter('training')"><h3 style="font-size:26px">🎓 ${t('Training')}</h3><p>${S.length} ${t('Students')} · ${t('Total Student Due')}: ${taka(sum(S,s=>s.due))}</p><small>${mini('training')}</small></div>
   <div class="card dark" style="cursor:pointer;padding:22px" onclick="enter('service')"><h3 style="font-size:26px">🔧 ${t('Service')}</h3><p>${J.filter(j=>j.status!=='Delivered').length} ${t('Pending Jobs')} · ${t('Customer Due')}: ${taka(sum(J,j=>Math.max(jDue(j),0)))}</p><small>${mini('service')}</small></div></div>
-  <button onclick="enter('common')" style="background:#6d28d9;color:#fff;border:0;padding:12px 16px;border-radius:8px;cursor:pointer;font-size:15px;font-weight:bold;margin-top:6px">🔐 ${t('Common / Admin')}: ${t('Employees')}, ${t('Expenses')}, ${t('Users & Security')}</button>`;
+  <div class="card" style="cursor:pointer;padding:22px;background:linear-gradient(135deg,#6d28d9,#4c1d95);color:#fff;border:0;margin-top:12px" onclick="enter('common')"><h3 style="font-size:26px">⚙ ${t('Common / Admin')}</h3><p>${t('Employees')} · ${t('Expenses')} · ${t('Users & Security')}</p><small>${DB.locks&&DB.locks.admin?'🔒 Password protected':''}</small></div>`;
 }
 function secDash(){
   const d=today(),m=d.slice(0,7)+'-01',u=sec,inc=sumTx('income',m,d,u),exp=sumTx('expense',m,d,u),due=sum(DB.emps.filter(e=>e.dept===u).map(eSum),e=>Math.max(e.rem,0));
@@ -257,8 +257,8 @@ function stuP(){
   S.forEach(s=>{
     h+=`<div class="card"><div class="top" onclick="tg('${s.id}')"><div><b>${esc(s.name)}</b> <small class="g">${s.code}</small><br><small class="g">${esc(s.phone)} · ${t(s.batch)} · ${s.date}</small></div><div style="text-align:right">${t('Paid')}: ${taka(s.fp)} / ${taka(s.fee)}<br><span class="${s.due>0?'red':'green'}">${t('Due')}: ${taka(s.due)}</span></div></div>`;
     if(ex===s.id)h+=`<hr><div class="form">${F('p_kind','Payment type','text','First',['Admission','First','Second','Third','Instrument'])}${F('p_amt','Amount','number')}${F('p_m','Method','text','Cash',METHODS)}${F('p_date','Date','date',today())}<button class="btn" onclick="addSP('${s.id}')">${t('Add Payment')}</button></div><p><b>${t('Payment History')}</b> · Instrument: ${taka(s.ins)}</p>`+
-      (s.ps.map(p=>`<div class="hist"><div>${p.date} · ${p.kind} · ${p.method}<br><small class="g">${p.no}</small></div><div><b>${taka(p.amt)}</b> <button class="dk" onclick="doc('sp','${p.id}')">${t('Receipt')}</button></div></div>`).join('')||t('No data'));
-    if(ex===s.id&&role==='admin')h+=`<p><button class="dk" onclick="delStu('${s.id}')">🗑 Remove student</button></p>`;
+      (s.ps.map(p=>`<div class="hist"><div>${p.date} · ${p.kind} · ${p.method}<br><small class="g">${p.no}</small></div><div><b>${taka(p.amt)}</b> <button class="dk" onclick="doc('sp','${p.id}')">${t('Receipt')}</button>${role==='admin'?` <button class="dk" style="background:#d71920;color:#fff;border:0" onclick="delSP('${p.id}')">🗑</button>`:''}</div></div>`).join('')||t('No data'));
+    if(role==='admin')h+=`<p style="margin:8px 0 0"><button class="dk" style="background:#d71920;color:#fff;border:0" onclick="delStu('${s.id}')">🗑 Remove student</button></p>`;
     h+='</div>';
   });
   return h;
@@ -280,6 +280,14 @@ function delStu(id){
   DB.sp=DB.sp.filter(p=>p.sid!==id);
   DB.stu=DB.stu.filter(x=>x.id!==id);
   ex=null;log('Student removed',s.code+' '+s.name+' payments voided: '+ps.length);save();render();
+}
+function delSP(id){
+  if(!adm())return;
+  const p=DB.sp.find(x=>x.id===id);if(!p)return;
+  if(!confirm('Remove this payment ('+p.no+', '+taka(p.amt)+')? It will be voided from income and logged in the Activity Log.'))return;
+  DB.tx.forEach(x=>{if(x.src===id)x.void=true});
+  DB.sp=DB.sp.filter(x=>x.id!==id);
+  log('Student payment removed',p.no+' '+taka(p.amt));save();render();
 }
 function addSP(sid){
   const s=sSum(DB.stu.find(x=>x.id===sid)),a=+g('p_amt'),k=g('p_kind');
