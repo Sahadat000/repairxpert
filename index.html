@@ -67,7 +67,7 @@ const g=id=>document.getElementById(id).value;
 const F=(id,l,type='text',v='',o=null)=>`<div><label>${t(l)}</label>${o?`<select id="${id}">${o.map(x=>`<option value="${esc(x)}" ${x==v?'selected':''}>${t(x)}</option>`).join('')}</select>`:`<input id="${id}" type="${type}" value="${esc(v)}">`}</div>`;
 const METHODS=['Cash','bKash','Nagad','Rocket','Bank'];
 const STAT=['Received','In Progress','Ready for Delivery','Delivered'];
-const SN={training:[['dash','Dashboard'],['stu','Students'],['pho','Photos'],['emp','Employees'],['inc','Income'],['exp','Expenses'],['ivc','Invoices'],['rep','Reports']],
+const SN={training:[['dash','Dashboard'],['stu','Students'],['emp','Employees'],['inc','Income'],['exp','Expenses'],['ivc','Invoices'],['rep','Reports']],
 service:[['dash','Dashboard'],['job','Service Jobs'],['acc','Service Accounting'],['inv','Inventory'],['emp','Employees'],['inc','Income'],['exp','Expenses'],['ivc','Invoices'],['rep','Reports']],
 home:[['dash','Dashboard']],
 common:[['dash','Dashboard'],['emp','Employees'],['inc','Income'],['exp','Expenses'],['ivc','Invoices'],['rep','Reports'],['usr','Users & Security']]};
@@ -175,7 +175,7 @@ function render(){
   const hb=document.getElementById('homeBtn'),sn=document.getElementById('secName');
   hb.style.display=sec?'':'none';sn.style.display=sec?'':'none';if(sec)sn.textContent=t(SECN[sec]);
   document.getElementById('nav').innerHTML=(sec?SN[sec]:[]).map(([k,l])=>`<button class="${page===k?'on':''}" onclick="page='${k}';ex=null;render()">${t(l)}</button>`).join('');
-  const P={dash:()=>(sec==='common'||sec==='home')?dashP():secDash(),stu:stuP,job:jobP,acc:accP,emp:empP,inc:()=>txP('income'),exp:()=>txP('expense'),inv:invP,ivc:ivcP,rep:repP,usr:usrP,pho:phoP};
+  const P={dash:()=>(sec==='common'||sec==='home')?dashP():secDash(),stu:stuP,job:jobP,acc:accP,emp:empP,inc:()=>txP('income'),exp:()=>txP('expense'),inv:invP,ivc:ivcP,rep:repP,usr:usrP};
   document.getElementById('app').innerHTML=(err?`<div class="err">${esc(err)}</div>`:'')+(sec?P[page]():homeP());err='';
 }
 function goHome(){sec=null;unl={};page='dash';ex=null;render()}
@@ -248,23 +248,7 @@ function dashP(){
   ${cd('Employee Salary Due',taka(sum(DB.emps.map(eSum),e=>Math.max(e.rem,0))),'rd')}${cd('Customer Due',taka(sum(DB.jobs,j=>Math.max(jDue(j),0))),'rd')}</div>`;
 }
 
-/* ---------- Training Photos ---------- */
-function phoP(){
-  DB.photos=DB.photos||[];
-  let h=`<div class="row"><h2 style="flex:1;margin:0">📷 ${t('Photos')} (${DB.photos.length})</h2></div><div class="card"><div class="form">${F('ph_cap','Caption (optional)')}<div><label>${t('Add Photo')}</label><input id="ph_file" type="file" accept="image/*" multiple onchange="addPhotos(this.files)"></div></div><small class="g">Photos are resized automatically to keep the system fast.</small></div>`;
-  h+=`<div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr))">`+DB.photos.map(p=>`<div class="card" style="padding:8px"><img src="${p.d}" style="width:100%;border-radius:8px;cursor:pointer" onclick="viewPhoto('${p.id}')"><div style="font-size:13px;margin-top:6px">${esc(p.cap||'')}</div><small class="g">${p.date}</small>${role==='admin'?`<div><button class="dk" style="background:#d71920;color:#fff;border:0;margin-top:6px" onclick="delPhoto('${p.id}')">🗑 Remove</button></div>`:''}</div>`).join('')+`</div>`;
-  if(!DB.photos.length)h+=`<p class="g">${t('No data')}</p>`;
-  return h;
-}
 function shrink(file,m){m=m||700;return new Promise((res,rej)=>{const r=new FileReader();r.onerror=rej;r.onload=()=>{const i=new Image();i.onerror=rej;i.onload=()=>{const k=Math.min(1,m/Math.max(i.width,i.height)),c=document.createElement('canvas');c.width=Math.round(i.width*k);c.height=Math.round(i.height*k);c.getContext('2d').drawImage(i,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',0.65))};i.src=r.result};r.readAsDataURL(file)})}
-async function addPhotos(files){
-  if(!files||!files.length)return;
-  DB.photos=DB.photos||[];const cap=g('ph_cap');
-  for(const f of files){try{DB.photos.unshift({id:uid(),d:await shrink(f),cap,date:today()})}catch(e){err='Could not read one of the images'}}
-  log('Training photo added',files.length+' photo(s)');save();render();
-}
-function viewPhoto(id){const p=DB.photos.find(x=>x.id===id);if(!p)return;const w=window.open('');if(w)w.document.write('<body style="margin:0;background:#000"><img src="'+p.d+'" style="max-width:100%;display:block;margin:auto"></body>')}
-function delPhoto(id){if(!adm())return;if(!confirm('Remove this photo?'))return;DB.photos=DB.photos.filter(x=>x.id!==id);log('Training photo removed');save();render()}
 
 /* ---------- Students ---------- */
 function stuP(){
