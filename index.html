@@ -45,7 +45,7 @@ hr{border:0;border-top:1px solid #eee;margin:12px 0}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script></head>
 <body>
 <header>
-  <div><b><span>Repair</span> Xpert <small style="font-weight:400;font-size:10px">v5</small></b> <button class="lang" id="homeBtn" style="display:none" onclick="goHome()">⌂ Home</button> <span id="secName" class="badge" style="display:none;background:#d71920;color:#fff"></span></div>
+  <div><b><span>Repair</span> Xpert <small style="font-weight:400;font-size:10px">v6</small></b> <button class="lang" id="homeBtn" style="display:none" onclick="goHome()">⌂ Home</button> <span id="secName" class="badge" style="display:none;background:#d71920;color:#fff"></span></div>
   <div><span id="who" style="font-size:13px;margin-right:6px"></span><button class="lang" id="refBtn" style="display:none" onclick="refresh()">⟳</button> <button class="lang" id="logoutBtn" style="display:none" onclick="logout()">Logout</button> <span id="sync" style="font-size:12px;color:#aaa"></span>
   <button class="lang" onclick="lang=lang==='en'?'bn':'en';render()">বাংলা / EN</button></div>
 </header>
@@ -75,7 +75,7 @@ const SECN={training:'Training',service:'Service',common:'Common / Admin',home:'
 const adm=()=>{if(role!=='admin'){alert('Admin permission required');return false}return true};
 
 let DB,sb=null,ver=0,saving=false,pending=false,st=null,me={name:'',role:'employee'},DEMO=false;
-let SB_URL='PASTE_SUPABASE_URL',SB_KEY='PASTE_ANON_KEY';
+let SB_URL='https://wzqabovqjrmphejpczsk.supabase.co',SB_KEY='sb_publishable_Wpp6txjqQ3b5v87IiQ6wJQ_jFGvP3jf';
 try{if(SB_URL.startsWith('PASTE')){SB_URL=localStorage.getItem('sbu')||SB_URL;SB_KEY=localStorage.getItem('sbk')||SB_KEY}}catch(e){}
 const emptyDB=()=>({c:{stu:0,job:0,n:0},stu:[],sp:[],jobs:[],emps:[],sal:[],tx:[],prod:[],log:[]});
 const setSync=m=>{const e=document.getElementById('sync');if(e)e.textContent=m};
