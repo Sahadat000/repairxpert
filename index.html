@@ -223,9 +223,9 @@ function homeP(){
   return `<h2>${t('Home')}</h2>${role==='admin'&&!(DB.locks&&DB.locks.home&&DB.locks.training&&DB.locks.service&&DB.locks.admin)?'<div class="warn">Set Dashboard, Training, Service and Admin passwords: Common / Admin → Users &amp; Security</div>':''}
   <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr))">
   <div class="card" style="cursor:pointer;padding:22px;background:linear-gradient(135deg,#0e7490,#1d4ed8);color:#fff;border:0" onclick="enter('home')"><h3 style="font-size:26px">📊 ${t('Dashboard')}</h3><p>${t('Monthly Income')} · ${t('Monthly Expenses')} · ${t('Net Profit')}</p><small>${DB.locks&&DB.locks.home?'🔒 Password protected':''}</small></div>
-  <div class="card rd" style="cursor:pointer;padding:22px" onclick="enter('training')"><h3 style="font-size:26px">🎓 ${t('Training')}</h3><p>${S.length} ${t('Students')} · ${t('Total Student Due')}: ${taka(sum(S,s=>s.due))}</p><small>${mini('training')}</small></div>
-  <div class="card dark" style="cursor:pointer;padding:22px" onclick="enter('service')"><h3 style="font-size:26px">🔧 ${t('Service')}</h3><p>${J.filter(j=>j.status!=='Delivered').length} ${t('Pending Jobs')} · ${t('Customer Due')}: ${taka(sum(J,j=>Math.max(jDue(j),0)))}</p><small>${mini('service')}</small></div></div>
-  <div class="card" style="cursor:pointer;padding:22px;background:linear-gradient(135deg,#6d28d9,#4c1d95);color:#fff;border:0;margin-top:12px" onclick="enter('common')"><h3 style="font-size:26px">⚙ ${t('Common / Admin')}</h3><p>${t('Employees')} · ${t('Expenses')} · ${t('Users & Security')}</p><small>${DB.locks&&DB.locks.admin?'🔒 Password protected':''}</small></div>`;
+  <div class="card rd" style="cursor:pointer;padding:22px" onclick="enter('training')"><h3 style="font-size:26px">🎓 ${t('Training')}</h3></div>
+  <div class="card dark" style="cursor:pointer;padding:22px" onclick="enter('service')"><h3 style="font-size:26px">🔧 ${t('Service')}</h3></div></div>
+  <div class="card" style="cursor:pointer;padding:22px;background:linear-gradient(135deg,#6d28d9,#4c1d95);color:#fff;border:0;margin-top:12px" onclick="enter('common')"><h3 style="font-size:26px">⚙ Admin Panel</h3><small>${DB.locks&&DB.locks.admin?'🔒 Password protected':''}</small></div>`;
 }
 function secDash(){
   const d=today(),m=d.slice(0,7)+'-01',u=sec,inc=sumTx('income',m,d,u),exp=sumTx('expense',m,d,u),due=sum(DB.emps.filter(e=>e.dept===u).map(eSum),e=>Math.max(e.rem,0));
