@@ -70,7 +70,7 @@ const STAT=['Received','In Progress','Ready for Delivery','Delivered'];
 const SN={training:[['dash','Dashboard'],['stu','Students'],['emp','Employees'],['inc','Income'],['exp','Expenses'],['ivc','Invoices'],['rep','Reports']],
 service:[['dash','Dashboard'],['job','Service Jobs'],['acc','Service Accounting'],['inv','Inventory'],['emp','Employees'],['inc','Income'],['exp','Expenses'],['ivc','Invoices'],['rep','Reports']],
 common:[['dash','Dashboard'],['emp','Employees'],['inc','Income'],['exp','Expenses'],['ivc','Invoices'],['rep','Reports'],['usr','Users & Security']]};
-const SECN={training:'Training',service:'Service',common:'Common / Admin'};
+const SECN={training:'Training',service:'Service',common:'Common / Admin',home:'Dashboard',admin:'Common / Admin'};
 const adm=()=>{if(role!=='admin'){alert('Admin permission required');return false}return true};
 
 let DB,sb=null,ver=0,saving=false,pending=false,st=null,me={name:'',role:'employee'},DEMO=false;
@@ -177,25 +177,30 @@ function render(){
   const P={dash:()=>sec==='common'?dashP():secDash(),stu:stuP,job:jobP,acc:accP,emp:empP,inc:()=>txP('income'),exp:()=>txP('expense'),inv:invP,ivc:ivcP,rep:repP,usr:usrP};
   document.getElementById('app').innerHTML=(err?`<div class="err">${esc(err)}</div>`:'')+(sec?P[page]():homeP());err='';
 }
-function goHome(){sec=null;unl={};page='dash';ex=null;render()}
+function goHome(){const h=unl.home;sec=null;unl={};if(h)unl.home=true;page='dash';ex=null;render()}
 async function hp(pw,salt){const k=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveBits']);const b=await crypto.subtle.deriveBits({name:'PBKDF2',salt:new TextEncoder().encode(salt),iterations:150000,hash:'SHA-256'},k,256);return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}
 function enter(x){
-  const L=(DB.locks||{})[x];
-  if(L&&x!=='common'&&!unl[x])return showLock(x);
+  const key=x==='common'?'admin':x,L=(DB.locks||{})[key];
+  if(L&&!unl[key])return showLock(key);
   sec=x;page='dash';ex=null;render();
+}
+function lockHtml(x,m){
+  const ic={training:'🎓',service:'🔧',home:'📊',admin:'⚙'}[x]||'🔒';
+  return `<div class="card" style="max-width:360px;margin:30px auto"><h2>${ic} ${t(SECN[x])}</h2><div class="form" style="grid-template-columns:1fr"><div><label>${t('Password')}</label><input id="k_pw" type="password" onkeydown="if(event.key==='Enter')unlock('${x}')"></div><button class="btn" onclick="unlock('${x}')">${t('Enter')}</button>${x==='home'?'':`<button class="dk" onclick="goHome()">${t('Cancel')}</button>`}</div>${m?'<div class="err" style="margin-top:8px">'+esc(m)+'</div>':''}</div>`;
 }
 function showLock(x,m){
   sec=null;document.getElementById('nav').innerHTML='';
-  document.getElementById('app').innerHTML=`<div class="card" style="max-width:360px;margin:30px auto"><h2>${x==='training'?'🎓':'🔧'} ${t(SECN[x])}</h2><div class="form" style="grid-template-columns:1fr"><div><label>${t('Password')}</label><input id="k_pw" type="password" onkeydown="if(event.key==='Enter')unlock('${x}')"></div><button class="btn" onclick="unlock('${x}')">${t('Enter')}</button><button class="dk" onclick="goHome()">${t('Cancel')}</button></div>${m?'<div class="err" style="margin-top:8px">'+esc(m)+'</div>':''}</div>`;
+  document.getElementById('app').innerHTML=lockHtml(x,m);
   setTimeout(()=>{const e=document.getElementById('k_pw');if(e&&e.focus)e.focus()},50);
 }
 async function unlock(x){
   const L=DB.locks[x],pw=g('k_pw');
-  if(await hp(pw,L.s)===L.h){unl[x]=true;enter(x)}else{await new Promise(r=>setTimeout(r,800));showLock(x,'Wrong password')}
+  if(await hp(pw,L.s)===L.h){unl[x]=true;if(x==='home')render();else enter(x==='admin'?'common':x)}
+  else{await new Promise(r=>setTimeout(r,800));if(x==='home'){err='Wrong password';render()}else showLock(x,'Wrong password')}
 }
 function lockForm(){
   const c=k=>(DB.locks&&DB.locks[k])?'✔ set':'✖ not set';
-  return `<div class="card"><b>Section passwords</b> <small class="g">(Admin: ${c('admin')} · Training: ${c('training')} · Service: ${c('service')})</small><div class="form" style="margin-top:8px">${DB.locks&&DB.locks.admin?F('k_ad','Admin password (required to change)','password'):''}${F('k_tr','Training password','password')}${F('k_sv','Service password','password')}${F('k_na',DB.locks&&DB.locks.admin?'New admin password (optional)':'Set Admin password (min 6)','password')}<button class="btn" onclick="setLocks()">Save passwords</button></div><small class="g">Leave a box empty to keep its current password. Admin password is needed every time passwords are changed. Keep it safe: if it is forgotten, only a technical person can reset it in the database.</small></div>`;
+  return `<div class="card"><b>Section passwords</b> <small class="g">(Admin: ${c('admin')} · Dashboard: ${c('home')} · Training: ${c('training')} · Service: ${c('service')})</small><div class="form" style="margin-top:8px">${DB.locks&&DB.locks.admin?F('k_ad','Admin password (required to change)','password'):''}${F('k_hm','Dashboard password','password')}${F('k_tr','Training password','password')}${F('k_sv','Service password','password')}${F('k_na',DB.locks&&DB.locks.admin?'New admin password (optional)':'Set Admin password (min 6)','password')}<button class="btn" onclick="setLocks()">Save passwords</button></div><small class="g">Leave a box empty to keep its current password. Admin password is needed every time passwords are changed. Keep it safe: if it is forgotten, only a technical person can reset it in the database.</small></div>`;
 }
 async function setLocks(){
   if(!adm())return;DB.locks=DB.locks||{};
@@ -203,7 +208,7 @@ async function setLocks(){
   if(A){if(await hp(g('k_ad'),A.s)!==A.h){await new Promise(r=>setTimeout(r,800));err='Wrong admin password';return render()}}
   else if(!na){err='Set an Admin password first';return render()}
   if(na&&na.length<6){err='Admin password must be at least 6 characters';return render()}
-  for(const[k,id]of[['training','k_tr'],['service','k_sv']]){
+  for(const[k,id]of[['home','k_hm'],['training','k_tr'],['service','k_sv']]){
     const v=g(id);if(!v)continue;
     if(v.length<4){err='Password must be at least 4 characters';return render()}
     const sl=uid()+uid();DB.locks[k]={s:sl,h:await hp(v,sl)};
@@ -212,13 +217,14 @@ async function setLocks(){
   log('Section passwords changed');save();alert('Saved');render();
 }
 function homeP(){
+  if(DB.locks&&DB.locks.home&&!unl.home){setTimeout(()=>{const e=document.getElementById('k_pw');if(e&&e.focus)e.focus()},50);return lockHtml('home')}
   const d=today(),m=d.slice(0,7)+'-01',S=DB.stu.map(sSum),J=DB.jobs,inc=sumTx('income',m,d),exp=sumTx('expense',m,d);
   const mini=u=>{const i=sumTx('income',m,d,u),e=sumTx('expense',m,d,u);return `${t('Monthly Income')}: ${taka(i)}<br>${t('Monthly Expenses')}: ${taka(e)}<br><b>${t('Net Profit')}: ${taka(i-e)}</b>`};
-  return `<h2>${t('Dashboard')}</h2>${role==='admin'&&!(DB.locks&&DB.locks.training&&DB.locks.service)?'<div class="warn">Set Training and Service passwords: Common / Admin → Users &amp; Security</div>':''}<div class="grid">${cd('Monthly Income',taka(inc))}${cd('Monthly Expenses',taka(exp))}${cd('Net Profit',taka(inc-exp),'dark')}</div>
+  return `<h2>${t('Dashboard')}</h2>${role==='admin'&&!(DB.locks&&DB.locks.training&&DB.locks.service)?'<div class="warn">Set Dashboard, Training, Service and Admin passwords: Common / Admin → Users &amp; Security</div>':''}<div class="grid">${cd('Monthly Income',taka(inc))}${cd('Monthly Expenses',taka(exp))}${cd('Net Profit',taka(inc-exp),'dark')}</div>
   <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr))">
   <div class="card rd" style="cursor:pointer;padding:22px" onclick="enter('training')"><h3 style="font-size:26px">🎓 ${t('Training')}</h3><p>${S.length} ${t('Students')} · ${t('Total Student Due')}: ${taka(sum(S,s=>s.due))}</p><small>${mini('training')}</small></div>
   <div class="card dark" style="cursor:pointer;padding:22px" onclick="enter('service')"><h3 style="font-size:26px">🔧 ${t('Service')}</h3><p>${J.filter(j=>j.status!=='Delivered').length} ${t('Pending Jobs')} · ${t('Customer Due')}: ${taka(sum(J,j=>Math.max(jDue(j),0)))}</p><small>${mini('service')}</small></div></div>
-  <button class="dk" onclick="enter('common')">⚙ ${t('Common / Admin')}: ${t('Employees')}, ${t('Expenses')}, ${t('Users & Security')}</button>`;
+  <button onclick="enter('common')" style="background:#6d28d9;color:#fff;border:0;padding:12px 16px;border-radius:8px;cursor:pointer;font-size:15px;font-weight:bold;margin-top:6px">🔐 ${t('Common / Admin')}: ${t('Employees')}, ${t('Expenses')}, ${t('Users & Security')}</button>`;
 }
 function secDash(){
   const d=today(),m=d.slice(0,7)+'-01',u=sec,inc=sumTx('income',m,d,u),exp=sumTx('expense',m,d,u),due=sum(DB.emps.filter(e=>e.dept===u).map(eSum),e=>Math.max(e.rem,0));
@@ -251,6 +257,7 @@ function stuP(){
     h+=`<div class="card"><div class="top" onclick="tg('${s.id}')"><div><b>${esc(s.name)}</b> <small class="g">${s.code}</small><br><small class="g">${esc(s.phone)} · ${t(s.batch)} · ${s.date}</small></div><div style="text-align:right">${t('Paid')}: ${taka(s.fp)} / ${taka(s.fee)}<br><span class="${s.due>0?'red':'green'}">${t('Due')}: ${taka(s.due)}</span></div></div>`;
     if(ex===s.id)h+=`<hr><div class="form">${F('p_kind','Payment type','text','First',['Admission','First','Second','Third','Instrument'])}${F('p_amt','Amount','number')}${F('p_m','Method','text','Cash',METHODS)}${F('p_date','Date','date',today())}<button class="btn" onclick="addSP('${s.id}')">${t('Add Payment')}</button></div><p><b>${t('Payment History')}</b> · Instrument: ${taka(s.ins)}</p>`+
       (s.ps.map(p=>`<div class="hist"><div>${p.date} · ${p.kind} · ${p.method}<br><small class="g">${p.no}</small></div><div><b>${taka(p.amt)}</b> <button class="dk" onclick="doc('sp','${p.id}')">${t('Receipt')}</button></div></div>`).join('')||t('No data'));
+    if(ex===s.id&&role==='admin')h+=`<p><button class="dk" onclick="delStu('${s.id}')">🗑 Remove student</button></p>`;
     h+='</div>';
   });
   return h;
@@ -261,6 +268,17 @@ function addStu(){
   DB.stu.unshift(s);log('New student',s.code+' '+s.name);
   if(+g('f_first')>0)stuPay(s.id,'Admission',+g('f_first'),'Cash',s.date);
   sf=0;save();render();
+}
+function delStu(id){
+  if(!adm())return;
+  const s=DB.stu.find(x=>x.id===id);if(!s)return;
+  const ps=DB.sp.filter(p=>p.sid===id);
+  if(!confirm('Remove '+s.name+' ('+s.code+')?'+(ps.length?' Their '+ps.length+' payment(s) will be voided from income. ':' ')+'This is logged in the Activity Log.'))return;
+  const ids=ps.map(p=>p.id);
+  DB.tx.forEach(x=>{if(x.src&&ids.includes(x.src))x.void=true});
+  DB.sp=DB.sp.filter(p=>p.sid!==id);
+  DB.stu=DB.stu.filter(x=>x.id!==id);
+  ex=null;log('Student removed',s.code+' '+s.name+' payments voided: '+ps.length);save();render();
 }
 function addSP(sid){
   const s=sSum(DB.stu.find(x=>x.id===sid)),a=+g('p_amt'),k=g('p_kind');
