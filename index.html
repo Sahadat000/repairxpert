@@ -45,7 +45,7 @@ hr{border:0;border-top:1px solid #eee;margin:12px 0}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script></head>
 <body>
 <header>
-  <div><b><span>Repair</span> Xpert <small style="font-weight:400;font-size:10px">v6</small></b> <button class="lang" id="homeBtn" style="display:none" onclick="goHome()">⌂ Home</button> <span id="secName" class="badge" style="display:none;background:#d71920;color:#fff"></span></div>
+  <div><b><span>Repair</span> Xpert <small style="font-weight:400;font-size:10px">v8</small></b> <button class="lang" id="homeBtn" style="display:none" onclick="goHome()">⌂ Home</button> <span id="secName" class="badge" style="display:none;background:#d71920;color:#fff"></span></div>
   <div><span id="who" style="font-size:13px;margin-right:6px"></span><button class="lang" id="refBtn" style="display:none" onclick="refresh()">⟳</button> <button class="lang" id="logoutBtn" style="display:none" onclick="logout()">Logout</button> <span id="sync" style="font-size:12px;color:#aaa"></span>
   <button class="lang" onclick="lang=lang==='en'?'bn':'en';render()">বাংলা / EN</button></div>
 </header>
@@ -140,7 +140,7 @@ function saveCfg(){try{localStorage.setItem('sbu',g('c_url').trim());localStorag
 function log(a,d){DB.log.unshift({t:new Date().toLocaleString('en-GB',{timeZone:'Asia/Dhaka'}),role,u:me.name,a,d:d||''});save()}
 function no(p){return p+'-'+String(++DB.c.n).padStart(5,'0')}
 function addTx(type,cat,amt,desc,method,date,src,unit){DB.tx.push({id:uid(),type,cat,amt:+amt,desc,method,date,src:src||null,unit:unit||'common',void:false})}
-function stuPay(sid,kind,amt,method,date){const s=DB.stu.find(x=>x.id===sid),id=uid(),n=no('RCPT');DB.sp.push({id,sid,kind,amt:+amt,method,date,no:n});addTx('income',kind==='Admission'?'Student Admission Fees':kind==='Instrument'?'Instrument Sales':'Student Installments',amt,kind+' - '+s.name,method,date,id,'training');log('Student payment',n+' '+s.name+' '+taka(amt))}
+function stuPay(sid,kind,amt,method,date){const s=DB.stu.find(x=>x.id===sid),id=uid(),n=no('RCPT');DB.sp.push({id,sid,kind,amt:+amt,method,date,no:n});addTx('income',kind==='Admission'?'Student Admission Fees':kind==='Instrument'?'Instrument Sales':'Student Installments',amt,kind+' - '+s.name,method,date,id,'training');{const lt=DB.tx[DB.tx.length-1];lt.name=s.name;lt.batch=s.batch}log('Student payment',n+' '+s.name+' '+taka(amt))}
 function jobPay(jid,amt,method,date){const j=DB.jobs.find(x=>x.id===jid),id=uid(),n=no('JR');j.pays.push({id,amt:+amt,method,date,no:n});addTx('income','Mobile Repairing Income',amt,j.no+' - '+j.cname,method,date,id,'service');log('Job payment',n+' '+j.no+' '+taka(amt))}
 function salPay(eid,kind,amt,method,date){const e=DB.emps.find(x=>x.id===eid),id=uid(),n=no('SAL');DB.sal.push({id,eid,kind,amt:+amt,method,date,no:n,month:date.slice(0,7)});addTx('expense','Employee Salary',amt,kind+' - '+e.name,method,date,id,e.dept||'common');log('Salary payment',n+' '+e.name+' '+taka(amt))}
 
@@ -333,8 +333,8 @@ function jobP(){
   return h;
 }
 function addJob(){
-  if(!g('j_name').trim()||!DB.emps.length)return;
-  const e=+g('j_est')||0,j={id:uid(),no:'JOB-'+today().slice(2,4)+'-'+String(++DB.c.job).padStart(4,'0'),cname:g('j_name'),phone:g('j_phone'),model:g('j_model'),imei:g('j_imei'),problem:g('j_prob'),tech:g('j_tech'),date:g('j_date'),est:e,price:e,extra:0,status:'Received',delivered:'',parts:[],pays:[]};
+  if(!g('j_name').trim()){err='Customer name is required';return render()}
+  const e=+g('j_est')||0,j={id:uid(),no:'JOB-'+today().slice(2,4)+'-'+String(++DB.c.job).padStart(4,'0'),cname:g('j_name'),phone:g('j_phone'),model:g('j_model'),imei:g('j_imei'),problem:g('j_prob'),tech:g('j_tech')||'Unassigned',date:g('j_date'),est:e,price:e,extra:0,status:'Received',delivered:'',parts:[],pays:[]};
   DB.jobs.unshift(j);log('Job received',j.no+' '+j.cname);jf=0;save();render();
 }
 function setStat(id,v){const j=DB.jobs.find(x=>x.id===id);j.status=v;j.delivered=v==='Delivered'?today():'';log('Job status',j.no+' → '+v);ex=null;save();render()}
@@ -385,11 +385,12 @@ function paySal(id){
 function txP(type){
   const cats=type==='income'?(sec==='training'?['Student Admission Fees','Student Installments','Instrument Sales','Other Income']:sec==='service'?['Mobile Repairing Income','Other Income']:['Student Admission Fees','Student Installments','Instrument Sales','Mobile Repairing Income','Other Income']):['Shop Rent','Employee Salary','Parts Purchase','Electricity Bill','Internet Bill','Facebook Marketing','Other Expenses'];
   const L=liveU().filter(x=>x.type===type).sort((a,b)=>b.date.localeCompare(a.date));
+  const tr=type==='income'&&sec==='training';
   return `<h2>${t(type==='income'?'Income':'Expenses')}: ${taka(sum(L,x=>x.amt))}</h2><div class="grid">${cats.map(c=>cd(c,taka(sum(L.filter(x=>x.cat===c),x=>x.amt)))).join('')}</div>
-  <div class="card"><div class="form">${F('t_cat','Category','text','',cats)}${F('t_amt','Amount','number')}${F('t_desc','Description')}${F('t_m','Method','text','Cash',METHODS)}${F('t_date','Date','date',today())}${sec==='common'?F('t_unit','Department','text','common',['common','training','service']):''}<button class="btn" onclick="addT('${type}')">${t('Add')}</button></div></div>
-  ${tbl(['Date','Category','Description','Method','Amount',''],L.map(x=>[x.date,x.cat,esc(x.desc),x.method,'<b>'+taka(x.amt)+'</b>',x.src?'<small class="g">auto</small>':`<button class="dk" onclick="voidT('${x.id}')">Void</button>`]))}`;
+  <div class="card"><div class="form">${F('t_cat','Category','text','',cats)}${F('t_amt','Amount','number')}${F('t_desc','Description')}${tr?F('t_name','Name')+F('t_batch','Batch No'):''}${F('t_m','Method','text','Cash',METHODS)}${F('t_date','Date','date',today())}${sec==='common'?F('t_unit','Department','text','common',['common','training','service']):''}<button class="btn" onclick="addT('${type}')">${t('Add')}</button></div></div>
+  ${tbl(tr?['Date','Category','Name','Batch No','Description','Method','Amount','']:['Date','Category','Description','Method','Amount',''],L.map(x=>[x.date,x.cat,...(tr?[esc(x.name||''),esc(x.batch||'')]:[]),esc(x.desc),x.method,'<b>'+taka(x.amt)+'</b>',x.src?'<small class="g">auto</small>':`<button class="dk" onclick="voidT('${x.id}')">Void</button>`]))}`;
 }
-function addT(type){const a=+g('t_amt');if(!(a>0)||!g('t_desc').trim()){err='Amount and description are required';return render()}addTx(type,g('t_cat'),a,g('t_desc'),g('t_m'),g('t_date'),null,sec==='common'?g('t_unit'):sec);log('Manual '+type,g('t_cat')+' '+taka(a));save();render()}
+function addT(type){const a=+g('t_amt');if(!(a>0)||!g('t_desc').trim()){err='Amount and description are required';return render()}addTx(type,g('t_cat'),a,g('t_desc'),g('t_m'),g('t_date'),null,sec==='common'?g('t_unit'):sec);if(type==='income'&&sec==='training'){const lt=DB.tx[DB.tx.length-1];lt.name=g('t_name').trim();lt.batch=g('t_batch').trim()}log('Manual '+type,g('t_cat')+' '+taka(a));save();render()}
 function voidT(id){if(!adm())return;const x=DB.tx.find(y=>y.id===id);if(!confirm('Void this record? It stays in the Activity Log.'))return;x.void=true;log('Record voided',x.cat+' '+taka(x.amt)+' '+x.desc);save();render()}
 
 /* ---------- Inventory ---------- */
