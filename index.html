@@ -45,7 +45,7 @@ hr{border:0;border-top:1px solid #eee;margin:12px 0}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script></head>
 <body>
 <header>
-  <div><b><span>Repair</span> Xpert <small style="font-weight:400;font-size:10px">v8</small></b> <button class="lang" id="homeBtn" style="display:none" onclick="goHome()">⌂ Home</button> <span id="secName" class="badge" style="display:none;background:#d71920;color:#fff"></span></div>
+  <div><b><span>Repair</span> Xpert <small style="font-weight:400;font-size:10px">v9</small></b> <button class="lang" id="homeBtn" style="display:none" onclick="goHome()">⌂ Home</button> <span id="secName" class="badge" style="display:none;background:#d71920;color:#fff"></span></div>
   <div><span id="who" style="font-size:13px;margin-right:6px"></span><button class="lang" id="refBtn" style="display:none" onclick="refresh()">⟳</button> <button class="lang" id="logoutBtn" style="display:none" onclick="logout()">Logout</button> <span id="sync" style="font-size:12px;color:#aaa"></span>
   <button class="lang" onclick="lang=lang==='en'?'bn':'en';render()">বাংলা / EN</button></div>
 </header>
@@ -327,7 +327,7 @@ function jobP(){
       ${j.parts.map(p=>`<div class="hist"><span>${esc(p.name)} × ${p.qty}</span><b>${taka(p.qty*p.cost)}</b></div>`).join('')}
       <hr><div class="form">${F('jp_amt','Amount','number')}${F('jp_m','Method','text','Cash',METHODS)}<button class="btn" onclick="addJP('${j.id}')">${t('Add Payment')}</button></div>
       ${j.pays.map(p=>`<div class="hist"><div>${p.date} · ${p.method}<br><small class="g">${p.no}</small></div><div><b>${taka(p.amt)}</b> <button class="dk" onclick="doc('jp','${p.id}')">${t('Receipt')}</button></div></div>`).join('')}
-      <div style="margin-top:8px"><button class="dk" onclick="doc('job','${j.id}')">${t('Invoice')}</button></div>`;
+      <div style="margin-top:8px"><button class="dk" onclick="doc('job','${j.id}')">${t('Invoice')}</button>${role==='admin'?` <button class="dk" style="background:#d71920" onclick="delJob('${j.id}')">🗑 Remove</button>`:''}</div>`;
     h+='</div>';
   });
   return h;
@@ -336,6 +336,16 @@ function addJob(){
   if(!g('j_name').trim()){err='Customer name is required';return render()}
   const e=+g('j_est')||0,j={id:uid(),no:'JOB-'+today().slice(2,4)+'-'+String(++DB.c.job).padStart(4,'0'),cname:g('j_name'),phone:g('j_phone'),model:g('j_model'),imei:g('j_imei'),problem:g('j_prob'),tech:g('j_tech')||'Unassigned',date:g('j_date'),est:e,price:e,extra:0,status:'Received',delivered:'',parts:[],pays:[]};
   DB.jobs.unshift(j);log('Job received',j.no+' '+j.cname);jf=0;save();render();
+}
+function delJob(id){
+  if(!adm())return;
+  const j=DB.jobs.find(x=>x.id===id);if(!j)return;
+  if(!confirm('Remove '+j.no+' ('+j.cname+')? Its payments will be voided from income and used parts returned to stock. This is logged in the Activity Log.'))return;
+  const ids=(j.pays||[]).map(p=>p.id);
+  DB.tx.forEach(x=>{if(x.src&&ids.includes(x.src))x.void=true});
+  (j.parts||[]).forEach(pt=>{const p=DB.prod.find(y=>y.id===pt.pid);if(p)p.qty+=pt.qty});
+  DB.jobs=DB.jobs.filter(x=>x.id!==id);
+  ex=null;log('Job removed',j.no+' '+j.cname);save();render();
 }
 function setStat(id,v){const j=DB.jobs.find(x=>x.id===id);j.status=v;j.delivered=v==='Delivered'?today():'';log('Job status',j.no+' → '+v);ex=null;save();render()}
 function updJob(id){if(!adm())return;const j=DB.jobs.find(x=>x.id===id);j.price=+g('u_price')||0;j.extra=+g('u_extra')||0;log('Job price edited',j.no+' price '+taka(j.price)+' extra '+taka(j.extra));save();render()}
