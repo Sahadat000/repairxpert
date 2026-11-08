@@ -57,7 +57,7 @@ const BN={'Dashboard':'ড্যাশবোর্ড','Students':'স্টু�
 'Total Students':'মোট স্টুডেন্ট','Morning':'সকাল','Evening':'সন্ধ্যা','Total Student Fees':'মোট কোর্স ফি','Total Student Payments':'মোট জমা','Total Student Due':'মোট বকেয়া',"Today's Service Jobs":'আজকের সার্ভিস জব','Pending Jobs':'পেন্ডিং জব','Delivered Jobs':'ডেলিভারি হয়েছে','Monthly Income':'মাসিক আয়','Monthly Expenses':'মাসিক খরচ','Net Profit':'নিট লাভ','Employee Salary Due':'কর্মচারী বেতন বাকি','Customer Due':'কাস্টমার বাকি',
 'Name':'নাম','Phone':'ফোন','Address':'ঠিকানা','Batch':'ব্যাচ','Course Fee':'কোর্স ফি','Date':'তারিখ','Amount':'টাকা','Method':'মাধ্যম','Save':'সংরক্ষণ','Add Payment':'পেমেন্ট যোগ','Payment History':'পেমেন্ট হিস্টরি','Receipt':'রসিদ','Invoice':'ইনভয়েস','Print':'প্রিন্ট','Status':'স্ট্যাটাস','Technician':'টেকনিশিয়ান','Problem':'সমস্যা','Parts Cost':'পার্টস খরচ','Selling Price':'বিক্রয় মূল্য','Profit':'লাভ','Designation':'পদবী','Salary':'বেতন','Bonus':'বোনাস','Advance':'অগ্রিম','Remaining':'বাকি','Category':'ক্যাটাগরি','Description':'বিবরণ','Add':'যোগ করুন','Supplier':'সরবরাহকারী','Quantity':'পরিমাণ','Purchase Price':'ক্রয়মূল্য','Low Stock':'স্টক কম','Activity Log':'অ্যাক্টিভিটি লগ','Backup':'ব্যাকআপ','Restore':'রিস্টোর',
 'Daily':'দৈনিক','Weekly':'সাপ্তাহিক','Monthly':'মাসিক','Yearly':'বার্ষিক','Received':'গ্রহণ করা হয়েছে','In Progress':'চলমান','Ready for Delivery':'ডেলিভারির জন্য প্রস্তুত','Delivered':'ডেলিভারি হয়েছে','Cash':'নগদ','Pending':'পেন্ডিং','Delivery History':'ডেলিভারি হিস্টরি','New Admission':'নতুন ভর্তি','Receive Job':'জব গ্রহণ','Search name / phone / ID':'নাম / ফোন / আইডি খুঁজুন','All batches':'সব ব্যাচ','Due only':'শুধু বকেয়া','Due':'বাকি','Paid':'জমা','No data':'কোনো তথ্য নেই','Total':'মোট','Expense':'খরচ','Export CSV (Excel)':'এক্সেল এক্সপোর্ট','Payment type':'পেমেন্টের ধরন','Phone Model':'ফোন মডেল','Estimated Cost':'আনুমানিক খরচ','Additional Expense':'অতিরিক্ত খরচ','Training':'ট্রেনিং','Photos':'ছবি','Batch':'ব্যাচ','Date':'তারিখ','Course Fee':'কোর্স ফি','Student Photo (optional)':'স্টুডেন্টের ছবি (ঐচ্ছিক)','Change photo':'ছবি পরিবর্তন','Add student photo':'স্টুডেন্টের ছবি যোগ করুন','Add Photo':'ছবি যোগ করুন','Caption (optional)':'ক্যাপশন (ঐচ্ছিক)','Service':'সার্ভিস','Common / Admin':'কমন / অ্যাডমিন','Department':'বিভাগ','training':'ট্রেনিং','service':'সার্ভিস','common':'কমন','Overall':'সামগ্রিক'};
-let lang='en',page='dash',role='admin',sec=null,unl={},jt='pending',rp='monthly',dm='',dq='',sf=0,jf=0,ef=0,pf=0,ex=null,q='',bf='',dueOnly=false,bo=false,dbo=false,err='';
+let lang='en',page='dash',role='admin',sec=null,unl={},jt='pending',rp='monthly',dm='',dq='',sf=0,jf=0,ef=0,pf=0,ex=null,q='',bf='',dueOnly=false,bo=false,dbo=false,ee=null,err='';
 const t=k=>lang==='bn'&&BN[k]?BN[k]:k;
 const taka=n=>'৳ '+Number(n||0).toLocaleString('en-IN');
 const today=()=>new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Dhaka'});
@@ -237,7 +237,7 @@ function secDash(){
   const J=DB.jobs;return `<h2>🔧 ${t('Service')} - ${t('Dashboard')}</h2><div class="grid">${cd("Today's Service Jobs",J.filter(j=>j.date===d).length,'dark')}${cd('Pending Jobs',J.filter(j=>j.status!=='Delivered').length)}${cd('Delivered Jobs',J.filter(j=>j.status==='Delivered').length)}${cd('Customer Due',taka(sum(J,j=>Math.max(jDue(j),0))),'rd')}${cd('Profit',taka(sum(J,jProfit)))}${fin}</div>`;
 }
 function keep(){const el=document.getElementById('q'),p=el.selectionStart;render();const n=document.getElementById('q');n.focus();n.setSelectionRange(p,p)}
-const tg=id=>{ex=ex===id?null:id;render()};
+const tg=id=>{ex=ex===id?null:id;ee=null;render()};
 
 /* ---------- Dashboard ---------- */
 function dashP(){
@@ -382,10 +382,24 @@ function empP(){
   if(ef)h+=`<div class="card"><div class="form">${F('e_name','Name')}${F('e_phone','Phone')}${F('e_des','Designation')}${F('e_join','Date','date',today())}${F('e_sal','Salary','number')}${F('e_bon','Bonus','number','0')}${F('e_dept','Department','text',U()||'service',['training','service'])}<button class="btn" onclick="addEmp()">${t('Save')}</button></div></div>`;
   DB.emps.filter(e=>!U()||e.dept===U()).map(eSum).forEach(e=>{
     h+=`<div class="card"><div class="top" onclick="tg('${e.id}')"><div><b>${esc(e.name)}</b> <small class="g">${esc(e.desig)} · ${e.dept||''}</small><br><small class="g">${esc(e.phone)} · joined ${e.join}</small></div><div style="text-align:right">${t('Salary')} ${taka(e.salary)} + ${t('Bonus')} ${taka(e.bonus)}<br>${t('Paid')}: ${taka(e.paid)} · <span class="${e.rem>0?'red':'green'}">${t('Remaining')}: ${taka(e.rem)}</span></div></div>`;
-    if(ex===e.id)h+=`<hr><div class="form">${F('sp_k','Payment type','text','Salary',['Salary','Advance','Bonus'])}${F('sp_a','Amount','number',Math.max(e.rem,0)||'')}${F('sp_m','Method','text','Cash',METHODS)}<button class="btn" onclick="paySal('${e.id}')">Confirm Payment</button></div><p><b>${t('Payment History')}</b></p>`+(e.hist.map(x=>`<div class="hist"><div>${x.date} · ${x.kind} · ${x.method}<br><small class="g">${x.no}</small></div><div><b>${taka(x.amt)}</b> <button class="dk" onclick="doc('sal','${x.id}')">${t('Receipt')}</button></div></div>`).join('')||t('No data'))+(role==='admin'?`<p><button class="dk" style="background:#d71920" onclick="delEmp('${e.id}')">🗑 Delete employee</button></p>`:'');
+    if(ex===e.id)h+=`<hr>${empEdit(e)}<div class="form">${F('sp_k','Payment type','text','Salary',['Salary','Advance','Bonus'])}${F('sp_a','Amount','number',Math.max(e.rem,0)||'')}${F('sp_m','Method','text','Cash',METHODS)}<button class="btn" onclick="paySal('${e.id}')">Confirm Payment</button></div><p><b>${t('Payment History')}</b></p>`+(e.hist.map(x=>`<div class="hist"><div>${x.date} · ${x.kind} · ${x.method}<br><small class="g">${x.no}</small></div><div><b>${taka(x.amt)}</b> <button class="dk" onclick="doc('sal','${x.id}')">${t('Receipt')}</button></div></div>`).join('')||t('No data'))+(role==='admin'?`<p><button class="dk" style="background:#d71920" onclick="delEmp('${e.id}')">🗑 Delete employee</button></p>`:'');
     h+='</div>';
   });
   return h;
+}
+function empEdit(e){
+  if(role!=='admin')return '';
+  if(ee!==e.id)return `<p><button class="dk" onclick="ee='${e.id}';render()">✏ Edit</button></p>`;
+  return `<div class="card" style="background:#fafafa"><b>✏ Edit employee</b><div class="form" style="margin-top:8px">${F('ee_name','Name','text',e.name)}${F('ee_phone','Phone','text',e.phone||'')}${F('ee_des','Designation','text',e.desig||'')}${F('ee_join','Date','date',e.join||today())}${F('ee_sal','Salary','number',e.salary)}${F('ee_bon','Bonus','number',e.bonus)}${F('ee_dept','Department','text',e.dept||'service',['training','service'])}<button class="btn" onclick="saveEmp('${e.id}')">${t('Save')}</button><button class="dk" onclick="ee=null;render()">Cancel</button></div></div>`;
+}
+function saveEmp(id){
+  if(!adm())return;
+  const e=DB.emps.find(x=>x.id===id);if(!e)return;
+  if(!g('ee_name').trim()){err='Name is required';return render()}
+  const old=e.name+' sal '+e.salary+' bonus '+e.bonus+' dept '+e.dept;
+  e.name=g('ee_name').trim();e.phone=g('ee_phone');e.desig=g('ee_des');e.join=g('ee_join');e.salary=+g('ee_sal')||0;e.bonus=+g('ee_bon')||0;e.dept=g('ee_dept');
+  log('Employee edited',old+' → '+e.name+' sal '+e.salary+' bonus '+e.bonus+' dept '+e.dept);
+  ee=null;save();render();
 }
 function delEmp(id){
   if(!adm())return;
