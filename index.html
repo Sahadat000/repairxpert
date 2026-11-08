@@ -45,7 +45,7 @@ hr{border:0;border-top:1px solid #eee;margin:12px 0}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script></head>
 <body>
 <header>
-  <div><b><span>Repair</span> Xpert <small style="font-weight:400;font-size:10px">v11</small></b> <button class="lang" id="homeBtn" style="display:none" onclick="goHome()">⌂ Home</button> <span id="secName" class="badge" style="display:none;background:#d71920;color:#fff"></span></div>
+  <div><b><span>Repair</span> Xpert <small style="font-weight:400;font-size:10px">v12</small></b> <button class="lang" id="homeBtn" style="display:none" onclick="goHome()">⌂ Home</button> <span id="secName" class="badge" style="display:none;background:#d71920;color:#fff"></span></div>
   <div><span id="who" style="font-size:13px;margin-right:6px"></span><button class="lang" id="refBtn" style="display:none" onclick="refresh()">⟳</button> <button class="lang" id="logoutBtn" style="display:none" onclick="logout()">Logout</button> <span id="sync" style="font-size:12px;color:#aaa"></span>
   <button class="lang" onclick="lang=lang==='en'?'bn':'en';render()">বাংলা / EN</button></div>
 </header>
@@ -85,13 +85,16 @@ async function remoteSave(){
   saving=true;
   const{data,error}=await sb.from('app_state').update({data:DB,version:ver+1,updated_at:new Date().toISOString()}).eq('id',1).eq('version',ver).select('version');
   saving=false;
+  if(error&&await expired(error))return;
   if(error){err='Save failed: '+error.message;setSync('not saved');render();return}
   if(!data||!data.length){alert('Another device saved changes first. Latest data is loaded now. Please enter your last change again.');await loadRemote();render();return}
   ver=data[0].version;setSync('saved ✔');
   if(pending){pending=false;remoteSave()}
 }
+async function expired(error){if(error&&/jwt|expired|401/i.test(String(error.message||error.code||''))){try{await sb.auth.signOut()}catch(e){}showLogin(0);return true}return false}
 async function loadRemote(){
   const{data,error}=await sb.from('app_state').select('data,version').eq('id',1).single();
+  if(error&&await expired(error))return false;
   if(error){document.getElementById('app').innerHTML='<div class="err">'+esc(error.message)+'</div>';return false}
   ver=data.version;DB=data.data&&data.data.c?data.data:emptyDB();return true;
 }
