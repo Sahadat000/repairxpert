@@ -45,7 +45,7 @@ hr{border:0;border-top:1px solid #eee;margin:12px 0}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script></head>
 <body>
 <header>
-  <div><b><span>Repair</span> Xpert <small style="font-weight:400;font-size:10px">v9</small></b> <button class="lang" id="homeBtn" style="display:none" onclick="goHome()">⌂ Home</button> <span id="secName" class="badge" style="display:none;background:#d71920;color:#fff"></span></div>
+  <div><b><span>Repair</span> Xpert <small style="font-weight:400;font-size:10px">v11</small></b> <button class="lang" id="homeBtn" style="display:none" onclick="goHome()">⌂ Home</button> <span id="secName" class="badge" style="display:none;background:#d71920;color:#fff"></span></div>
   <div><span id="who" style="font-size:13px;margin-right:6px"></span><button class="lang" id="refBtn" style="display:none" onclick="refresh()">⟳</button> <button class="lang" id="logoutBtn" style="display:none" onclick="logout()">Logout</button> <span id="sync" style="font-size:12px;color:#aaa"></span>
   <button class="lang" onclick="lang=lang==='en'?'bn':'en';render()">বাংলা / EN</button></div>
 </header>
@@ -254,7 +254,7 @@ function shrink(file,m){m=m||700;return new Promise((res,rej)=>{const r=new File
 function stuP(){
   const S=DB.stu.map(sSum).filter(s=>(!bf||s.batch===bf)&&(!dueOnly||s.due>0)&&(!q||(s.name+s.phone+s.code).toLowerCase().includes(q.toLowerCase())));
   let h=`<div class="row"><h2 style="flex:1;margin:0">${t('Students')} (${S.length})</h2><button class="btn" onclick="sf=!sf;render()">+ ${t('New Admission')}</button></div>`;
-  if(sf)h+=`<div class="card"><div class="form">${F('f_name','Name')}${F('f_phone','Phone')}${F('f_addr','Address')}${F('f_batch','Batch','text','Morning',['Morning','Evening'])}${F('f_fee','Course Fee','number')}${F('f_date','Date','date',today())}${F('f_first','Admission payment now (optional)','number')}<div><label>Student Photo (optional)</label><input id="f_photo" type="file" accept="image/*"></div><button class="btn" onclick="addStu()">${t('Save')}</button></div></div>`;
+  if(sf)h+=`<div class="card"><div class="form">${F('f_id','Student ID (optional)')}${F('f_name','Name')}${F('f_phone','Phone')}${F('f_addr','Address')}${F('f_batch','Batch','text','Morning',['Morning','Evening'])}${F('f_fee','Course Fee','number')}${F('f_date','Date','date',today())}${F('f_first','Admission payment now (optional)','number')}<div><label>Student Photo (optional)</label><input id="f_photo" type="file" accept="image/*"></div><button class="btn" onclick="addStu()">${t('Save')}</button></div></div>`;
   h+=`<div class="row"><input style="max-width:250px" id="q" placeholder="${t('Search name / phone / ID')}" value="${esc(q)}" oninput="q=this.value;keep()"><select style="max-width:150px" onchange="bf=this.value;render()"><option value="">${t('All batches')}</option><option value="Morning" ${bf==='Morning'?'selected':''}>${t('Morning')}</option><option value="Evening" ${bf==='Evening'?'selected':''}>${t('Evening')}</option></select><label style="margin:0"><input type="checkbox" style="width:auto" ${dueOnly?'checked':''} onchange="dueOnly=this.checked;render()"> ${t('Due only')}</label></div>`;
   S.forEach(s=>{
     h+=`<div class="card"><div class="top" onclick="tg('${s.id}')"><div style="display:flex;gap:10px;align-items:center">${s.photo?`<img src="${s.photo}" style="width:48px;height:48px;border-radius:50%;object-fit:cover">`:`<div style="width:48px;height:48px;border-radius:50%;background:#eee;display:flex;align-items:center;justify-content:center;font-size:22px">👤</div>`}<div><b>${esc(s.name)}</b> <small class="g">${s.code}</small><br><small class="g">${esc(s.phone)} · ${t(s.batch)} · ${s.date}</small></div></div><div style="text-align:right">${t('Paid')}: ${taka(s.fp)} / ${taka(s.fee)}<br><span class="${s.due>0?'red':'green'}">${t('Due')}: ${taka(s.due)}</span></div></div>`;
@@ -267,7 +267,8 @@ function stuP(){
 }
 async function addStu(){
   if(!g('f_name').trim())return;
-  const s={id:uid(),code:'RE-'+today().slice(2,4)+'-'+String(++DB.c.stu).padStart(4,'0'),name:g('f_name'),phone:g('f_phone'),addr:g('f_addr'),batch:g('f_batch'),fee:+g('f_fee')||0,date:g('f_date')};
+  const cid=g('f_id').trim();if(cid&&DB.stu.some(x=>String(x.code).toLowerCase()===cid.toLowerCase())){err='Student ID already used';return render()}
+  const s={id:uid(),code:cid||('RE-'+today().slice(2,4)+'-'+String(++DB.c.stu).padStart(4,'0')),name:g('f_name'),phone:g('f_phone'),addr:g('f_addr'),batch:g('f_batch'),fee:+g('f_fee')||0,date:g('f_date')};
   const pf0=document.getElementById('f_photo');if(pf0&&pf0.files[0]){try{s.photo=await shrink(pf0.files[0],400)}catch(e){}}
   DB.stu.unshift(s);log('New student',s.code+' '+s.name);
   if(+g('f_first')>0)stuPay(s.id,'Admission',+g('f_first'),'Cash',s.date);
@@ -377,10 +378,20 @@ function empP(){
   if(ef)h+=`<div class="card"><div class="form">${F('e_name','Name')}${F('e_phone','Phone')}${F('e_des','Designation')}${F('e_join','Date','date',today())}${F('e_sal','Salary','number')}${F('e_bon','Bonus','number','0')}${F('e_dept','Department','text',U()||'service',['training','service'])}<button class="btn" onclick="addEmp()">${t('Save')}</button></div></div>`;
   DB.emps.filter(e=>!U()||e.dept===U()).map(eSum).forEach(e=>{
     h+=`<div class="card"><div class="top" onclick="tg('${e.id}')"><div><b>${esc(e.name)}</b> <small class="g">${esc(e.desig)} · ${e.dept||''}</small><br><small class="g">${esc(e.phone)} · joined ${e.join}</small></div><div style="text-align:right">${t('Salary')} ${taka(e.salary)} + ${t('Bonus')} ${taka(e.bonus)}<br>${t('Paid')}: ${taka(e.paid)} · <span class="${e.rem>0?'red':'green'}">${t('Remaining')}: ${taka(e.rem)}</span></div></div>`;
-    if(ex===e.id)h+=`<hr><div class="form">${F('sp_k','Payment type','text','Salary',['Salary','Advance','Bonus'])}${F('sp_a','Amount','number',Math.max(e.rem,0)||'')}${F('sp_m','Method','text','Cash',METHODS)}<button class="btn" onclick="paySal('${e.id}')">Confirm Payment</button></div><p><b>${t('Payment History')}</b></p>`+(e.hist.map(x=>`<div class="hist"><div>${x.date} · ${x.kind} · ${x.method}<br><small class="g">${x.no}</small></div><div><b>${taka(x.amt)}</b> <button class="dk" onclick="doc('sal','${x.id}')">${t('Receipt')}</button></div></div>`).join('')||t('No data'));
+    if(ex===e.id)h+=`<hr><div class="form">${F('sp_k','Payment type','text','Salary',['Salary','Advance','Bonus'])}${F('sp_a','Amount','number',Math.max(e.rem,0)||'')}${F('sp_m','Method','text','Cash',METHODS)}<button class="btn" onclick="paySal('${e.id}')">Confirm Payment</button></div><p><b>${t('Payment History')}</b></p>`+(e.hist.map(x=>`<div class="hist"><div>${x.date} · ${x.kind} · ${x.method}<br><small class="g">${x.no}</small></div><div><b>${taka(x.amt)}</b> <button class="dk" onclick="doc('sal','${x.id}')">${t('Receipt')}</button></div></div>`).join('')||t('No data'))+(role==='admin'?`<p><button class="dk" style="background:#d71920" onclick="delEmp('${e.id}')">🗑 Delete employee</button></p>`:'');
     h+='</div>';
   });
   return h;
+}
+function delEmp(id){
+  if(!adm())return;
+  const e=DB.emps.find(x=>x.id===id);if(!e)return;
+  const ids=DB.sal.filter(x=>x.eid===id).map(x=>x.id);
+  if(!confirm('Delete '+e.name+'?'+(ids.length?' Their '+ids.length+' salary payment(s) will also be removed from Expenses.':'')+' This is logged in the Activity Log.'))return;
+  DB.tx.forEach(x=>{if(x.src&&ids.includes(x.src))x.void=true});
+  DB.sal=DB.sal.filter(x=>x.eid!==id);
+  DB.emps=DB.emps.filter(x=>x.id!==id);
+  ex=null;log('Employee deleted',e.name);save();render();
 }
 function addEmp(){if(!adm()||!g('e_name').trim())return;const e={id:uid(),name:g('e_name'),phone:g('e_phone'),desig:g('e_des'),dept:g('e_dept'),join:g('e_join'),salary:+g('e_sal')||0,bonus:+g('e_bon')||0};DB.emps.push(e);log('New employee',e.name);ef=0;save();render()}
 function paySal(id){
@@ -398,10 +409,10 @@ function txP(type){
   const tr=type==='income'&&sec==='training';
   return `<h2>${t(type==='income'?'Income':'Expenses')}: ${taka(sum(L,x=>x.amt))}</h2><div class="grid">${cats.map(c=>cd(c,taka(sum(L.filter(x=>x.cat===c),x=>x.amt)))).join('')}</div>
   <div class="card"><div class="form">${F('t_cat','Category','text','',cats)}${F('t_amt','Amount','number')}${F('t_desc','Description')}${tr?F('t_name','Name')+F('t_batch','Batch No'):''}${F('t_m','Method','text','Cash',METHODS)}${F('t_date','Date','date',today())}${sec==='common'?F('t_unit','Department','text','common',['common','training','service']):''}<button class="btn" onclick="addT('${type}')">${t('Add')}</button></div></div>
-  ${tbl(tr?['Date','Category','Name','Batch No','Description','Method','Amount','']:['Date','Category','Description','Method','Amount',''],L.map(x=>[x.date,x.cat,...(tr?[esc(x.name||''),esc(x.batch||'')]:[]),esc(x.desc),x.method,'<b>'+taka(x.amt)+'</b>',x.src?'<small class="g">auto</small>':`<button class="dk" onclick="voidT('${x.id}')">Void</button>`]))}`;
+  ${tbl(tr?['Date','Category','Name','Batch No','Description','Method','Amount','']:['Date','Category','Description','Method','Amount',''],L.map(x=>[x.date,x.cat,...(tr?[esc(x.name||''),esc(x.batch||'')]:[]),esc(x.desc),x.method,'<b>'+taka(x.amt)+'</b>',x.src&&!DB.sal.some(y=>y.id===x.src)?'<small class="g">auto</small>':`<button class="dk" onclick="voidT('${x.id}')">Delete</button>`]))}`;
 }
 function addT(type){const a=+g('t_amt');if(!(a>0)||!g('t_desc').trim()){err='Amount and description are required';return render()}addTx(type,g('t_cat'),a,g('t_desc'),g('t_m'),g('t_date'),null,sec==='common'?g('t_unit'):sec);if(type==='income'&&sec==='training'){const lt=DB.tx[DB.tx.length-1];lt.name=g('t_name').trim();lt.batch=g('t_batch').trim()}log('Manual '+type,g('t_cat')+' '+taka(a));save();render()}
-function voidT(id){if(!adm())return;const x=DB.tx.find(y=>y.id===id);if(!confirm('Void this record? It stays in the Activity Log.'))return;x.void=true;log('Record voided',x.cat+' '+taka(x.amt)+' '+x.desc);save();render()}
+function voidT(id){if(!adm())return;const x=DB.tx.find(y=>y.id===id);if(!confirm('Delete this record? It stays in the Activity Log.'))return;x.void=true;if(x.src)DB.sal=DB.sal.filter(y=>y.id!==x.src);log('Record voided',x.cat+' '+taka(x.amt)+' '+x.desc);save();render()}
 
 /* ---------- Inventory ---------- */
 function invP(){
@@ -471,6 +482,7 @@ function restore(f){if(!adm()||!f)return;const r=new FileReader();r.onload=()=>{
 function resetDemo(){if(!adm())return;if(DB.tx.length||DB.stu.length||DB.jobs.length||DB.emps.length){alert('System is not empty. Sample data can only be loaded into an empty system.');return}if(confirm('Load sample data?')){seed();render()}}
 
 boot();
+let _day=today();setInterval(()=>{try{if(today()!==_day){_day=today();if(typeof DB!=='undefined'&&DB&&sec!==undefined)render()}}catch(e){}},60000);
 </script>
 </body>
 </html>
