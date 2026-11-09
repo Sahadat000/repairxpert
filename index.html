@@ -45,7 +45,7 @@ hr{border:0;border-top:1px solid #eee;margin:12px 0}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script></head>
 <body>
 <header>
-  <div><b><span>Repair</span> Xpert <small style="font-weight:400;font-size:10px">v14</small></b> <button class="lang" id="homeBtn" style="display:none" onclick="goHome()">⌂ Home</button> <span id="secName" class="badge" style="display:none;background:#d71920;color:#fff"></span></div>
+  <div><b><span>Repair</span> Xpert <small style="font-weight:400;font-size:10px">v15</small></b> <button class="lang" id="homeBtn" style="display:none" onclick="goHome()">⌂ Home</button> <span id="secName" class="badge" style="display:none;background:#d71920;color:#fff"></span></div>
   <div><span id="who" style="font-size:13px;margin-right:6px"></span><button class="lang" id="refBtn" style="display:none" onclick="refresh()">⟳</button> <button class="lang" id="logoutBtn" style="display:none" onclick="logout()">Logout</button> <span id="sync" style="font-size:12px;color:#aaa"></span>
   <button class="lang" onclick="lang=lang==='en'?'bn':'en';render()">বাংলা / EN</button></div>
 </header>
@@ -57,7 +57,7 @@ const BN={'Dashboard':'ড্যাশবোর্ড','Students':'স্টু�
 'Total Students':'মোট স্টুডেন্ট','Morning':'সকাল','Evening':'সন্ধ্যা','Total Student Fees':'মোট কোর্স ফি','Total Student Payments':'মোট জমা','Total Student Due':'মোট বকেয়া',"Today's Service Jobs":'আজকের সার্ভিস জব','Pending Jobs':'পেন্ডিং জব','Delivered Jobs':'ডেলিভারি হয়েছে','Monthly Income':'মাসিক আয়','Monthly Expenses':'মাসিক খরচ','Net Profit':'নিট লাভ','Employee Salary Due':'কর্মচারী বেতন বাকি','Customer Due':'কাস্টমার বাকি',
 'Name':'নাম','Phone':'ফোন','Address':'ঠিকানা','Batch':'ব্যাচ','Course Fee':'কোর্স ফি','Date':'তারিখ','Amount':'টাকা','Method':'মাধ্যম','Save':'সংরক্ষণ','Add Payment':'পেমেন্ট যোগ','Payment History':'পেমেন্ট হিস্টরি','Receipt':'রসিদ','Invoice':'ইনভয়েস','Print':'প্রিন্ট','Status':'স্ট্যাটাস','Technician':'টেকনিশিয়ান','Problem':'সমস্যা','Parts Cost':'পার্টস খরচ','Selling Price':'বিক্রয় মূল্য','Profit':'লাভ','Designation':'পদবী','Salary':'বেতন','Bonus':'বোনাস','Advance':'অগ্রিম','Remaining':'বাকি','Category':'ক্যাটাগরি','Description':'বিবরণ','Add':'যোগ করুন','Supplier':'সরবরাহকারী','Quantity':'পরিমাণ','Purchase Price':'ক্রয়মূল্য','Low Stock':'স্টক কম','Activity Log':'অ্যাক্টিভিটি লগ','Backup':'ব্যাকআপ','Restore':'রিস্টোর',
 'Daily':'দৈনিক','Weekly':'সাপ্তাহিক','Monthly':'মাসিক','Yearly':'বার্ষিক','Received':'গ্রহণ করা হয়েছে','In Progress':'চলমান','Ready for Delivery':'ডেলিভারির জন্য প্রস্তুত','Delivered':'ডেলিভারি হয়েছে','Cash':'নগদ','Pending':'পেন্ডিং','Delivery History':'ডেলিভারি হিস্টরি','New Admission':'নতুন ভর্তি','Receive Job':'জব গ্রহণ','Search name / phone / ID':'নাম / ফোন / আইডি খুঁজুন','All batches':'সব ব্যাচ','Due only':'শুধু বকেয়া','Due':'বাকি','Paid':'জমা','No data':'কোনো তথ্য নেই','Total':'মোট','Expense':'খরচ','Export CSV (Excel)':'এক্সেল এক্সপোর্ট','Payment type':'পেমেন্টের ধরন','Phone Model':'ফোন মডেল','Estimated Cost':'আনুমানিক খরচ','Additional Expense':'অতিরিক্ত খরচ','Training':'ট্রেনিং','Photos':'ছবি','Batch':'ব্যাচ','Date':'তারিখ','Course Fee':'কোর্স ফি','Student Photo (optional)':'স্টুডেন্টের ছবি (ঐচ্ছিক)','Change photo':'ছবি পরিবর্তন','Add student photo':'স্টুডেন্টের ছবি যোগ করুন','Add Photo':'ছবি যোগ করুন','Caption (optional)':'ক্যাপশন (ঐচ্ছিক)','Service':'সার্ভিস','Common / Admin':'কমন / অ্যাডমিন','Department':'বিভাগ','training':'ট্রেনিং','service':'সার্ভিস','common':'কমন','Overall':'সামগ্রিক'};
-let lang='en',page='dash',role='admin',sec=null,unl={},jt='pending',rp='monthly',dm='',dq='',sf=0,jf=0,ef=0,pf=0,ex=null,q='',bf='',dueOnly=false,bo=false,dbo=false,ee=null,err='';
+let lang='en',page='dash',role='admin',sec=null,unl={},jt='pending',rp='monthly',dm='',dq='',shf=false,shx=null,sf=0,jf=0,ef=0,pf=0,ex=null,q='',bf='',dueOnly=false,bo=false,dbo=false,ee=null,err='';
 const t=k=>lang==='bn'&&BN[k]?BN[k]:k;
 const taka=n=>'৳ '+Number(n||0).toLocaleString('en-IN');
 const today=()=>new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Dhaka'});
@@ -443,8 +443,54 @@ function txP(type){
   const L=liveU().filter(x=>x.type===type).sort((a,b)=>b.date.localeCompare(a.date));
   const tr=type==='income'&&sec==='training';
   return `<h2>${t(type==='income'?'Income':'Expenses')}: ${taka(sum(L,x=>x.amt))}</h2><div class="grid">${cats.map(c=>cd(c,taka(sum(L.filter(x=>x.cat===c),x=>x.amt)))).join('')}</div>
+  ${type==='expense'&&sec==='service'?shopsHtml():''}
   <div class="card"><div class="form">${F('t_cat','Category','text','',cats)}${F('t_amt','Amount','number')}${F('t_desc','Description (optional)')}${tr?F('t_name','Name (optional)')+F('t_batch','Batch No (optional)'):''}${F('t_m','Method','text','Cash',METHODS)}${F('t_date','Date','date',today())}${sec==='common'?F('t_unit','Department','text','common',['common','training','service']):''}<button class="btn" onclick="addT('${type}')">${t('Add')}</button></div></div>
   ${tbl(tr?['Date','Category','Name','Batch No','Description','Method','Amount','']:['Date','Category','Description','Method','Amount',''],L.map(x=>[x.date,x.cat,...(tr?[esc(x.name||''),esc(x.batch||'')]:[]),esc(x.desc),x.method,'<b>'+taka(x.amt)+'</b>',x.src&&!DB.sal.some(y=>y.id===x.src)?'<small class="g">auto</small>':`<button class="dk" onclick="voidT('${x.id}')">Delete</button>`]))}`;
+}
+const SH=()=>(DB.shops=DB.shops||[]);
+function shopsHtml(){
+  let h=`<div class="row" style="margin:10px 0"><h3 style="margin:0;flex:1">📁 Shops / Folders</h3><button class="btn" style="padding:4px 18px;font-size:22px;line-height:1.2" onclick="shf=!shf;render()">${shf?'×':'+'}</button></div>`;
+  if(shf)h+=`<div class="card"><div class="form">${F('sh_name','Shop / Folder name')}<button class="btn" onclick="addShop()">${t('Add')}</button></div></div>`;
+  SH().forEach(s=>{
+    const open=shx===s.id;
+    h+=`<div class="card"><div class="top" onclick="shx=${open?'null':`'${s.id}'`};render()"><div><b>📁 ${esc(s.name)}</b><br><small class="g">${s.items.length} item(s)</small></div><b>${taka(sum(s.items,i=>i.price))}</b></div>`;
+    if(open){
+      h+=`<hr><div class="form">${F('si_item','Item (what was bought)')}${F('si_price','Price','number')}${F('si_m','Method','text','Cash',METHODS)}${F('si_date','Date','date',today())}<button class="btn" onclick="addShopItem('${s.id}')">${t('Add')}</button></div>`;
+      h+=(s.items.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(i=>`<div class="hist"><div>${i.date} · ${esc(i.item)}</div><div><b>${taka(i.price)}</b>${role==='admin'?` <button class="dk" style="background:#d71920;color:#fff;border:0" onclick="delShopItem('${s.id}','${i.id}')">🗑</button>`:''}</div></div>`).join('')||`<p class="g">${t('No data')}</p>`);
+      if(role==='admin')h+=`<p style="margin:8px 0 0"><button class="dk" style="background:#d71920;color:#fff;border:0" onclick="delShop('${s.id}')">🗑 Delete folder</button></p>`;
+    }
+    h+='</div>';
+  });
+  return h;
+}
+function addShop(){
+  const n=g('sh_name').trim();if(!n){err='Folder name is required';return render()}
+  const s={id:uid(),name:n,items:[]};SH().unshift(s);shf=false;shx=s.id;log('Shop folder added',n);save();render();
+}
+function addShopItem(id){
+  const s=SH().find(x=>x.id===id);if(!s)return;
+  const item=g('si_item').trim(),price=+g('si_price');
+  if(!item||!(price>0)){err='Item and price are required';return render()}
+  const it={id:uid(),item,price,date:g('si_date')||today()};
+  s.items.push(it);
+  addTx('expense','Parts Purchase',price,s.name+': '+item,g('si_m')||'Cash',it.date,it.id,'service');
+  log('Shop item',s.name+' - '+item+' '+taka(price));save();render();
+}
+function delShopItem(sid,iid){
+  if(!adm())return;
+  const s=SH().find(x=>x.id===sid);if(!s)return;
+  const it=s.items.find(x=>x.id===iid);if(!it)return;
+  if(!confirm('Delete "'+it.item+'" ('+taka(it.price)+')? It will also be removed from Expenses.'))return;
+  DB.tx.forEach(x=>{if(x.src===iid)x.void=true});
+  s.items=s.items.filter(x=>x.id!==iid);log('Shop item deleted',s.name+' - '+it.item+' '+taka(it.price));save();render();
+}
+function delShop(id){
+  if(!adm())return;
+  const s=SH().find(x=>x.id===id);if(!s)return;
+  if(!confirm('Delete folder "'+s.name+'" with '+s.items.length+' item(s)? Its items will also be removed from Expenses.'))return;
+  const ids=s.items.map(i=>i.id);
+  DB.tx.forEach(x=>{if(x.src&&ids.includes(x.src))x.void=true});
+  DB.shops=SH().filter(x=>x.id!==id);shx=null;log('Shop folder deleted',s.name);save();render();
 }
 function addT(type){const a=+g('t_amt');if(!(a>0)){err='Amount is required';return render()}addTx(type,g('t_cat'),a,g('t_desc'),g('t_m'),g('t_date'),null,sec==='common'?g('t_unit'):sec);if(type==='income'&&sec==='training'){const lt=DB.tx[DB.tx.length-1];lt.name=g('t_name').trim();lt.batch=g('t_batch').trim()}log('Manual '+type,g('t_cat')+' '+taka(a));save();render()}
 function voidT(id){if(!adm())return;const x=DB.tx.find(y=>y.id===id);if(!confirm('Delete this record? It stays in the Activity Log.'))return;x.void=true;if(x.src)DB.sal=DB.sal.filter(y=>y.id!==x.src);log('Record voided',x.cat+' '+taka(x.amt)+' '+x.desc);save();render()}
