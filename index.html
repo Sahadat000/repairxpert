@@ -45,7 +45,7 @@ hr{border:0;border-top:1px solid #eee;margin:12px 0}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script></head>
 <body>
 <header>
-  <div><b><span>Repair</span> Xpert <small style="font-weight:400;font-size:10px">v16</small></b> <button class="lang" id="homeBtn" style="display:none" onclick="goHome()">⌂ Home</button> <span id="secName" class="badge" style="display:none;background:#d71920;color:#fff"></span></div>
+  <div><b><span>Repair</span> Xpert <small style="font-weight:400;font-size:10px">v19</small></b> <button class="lang" id="homeBtn" style="display:none" onclick="goHome()">⌂ Home</button> <span id="secName" class="badge" style="display:none;background:#d71920;color:#fff"></span></div>
   <div><span id="who" style="font-size:13px;margin-right:6px"></span><button class="lang" id="refBtn" style="display:none" onclick="refresh()">⟳</button> <button class="lang" id="logoutBtn" style="display:none" onclick="logout()">Logout</button> <span id="sync" style="font-size:12px;color:#aaa"></span>
   <button class="lang" onclick="lang=lang==='en'?'bn':'en';render()">বাংলা / EN</button></div>
 </header>
@@ -460,8 +460,8 @@ function shopsHtml(){
     const open=shx===s.id;
     h+=`<div class="card"><div class="top" onclick="shx=${open?'null':`'${s.id}'`};render()"><div><b>📁 ${esc(s.name)}</b><br><small class="g">${s.items.length} item(s)</small></div><b>${taka(sum(s.items,i=>i.price))}</b></div>`;
     if(open){
-      h+=`<hr><div class="form">${F('si_item','Item (what was bought)')}${F('si_price','Price','number')}${F('si_m','Method','text','Cash',METHODS)}${F('si_date','Date','date',today())}<button class="btn" onclick="addShopItem('${s.id}')">${t('Add')}</button></div>`;
-      h+=(s.items.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(i=>`<div class="hist"><div>${i.date} · ${esc(i.item)}</div><div><b>${taka(i.price)}</b>${role==='admin'?` <button class="dk" style="background:#d71920;color:#fff;border:0" onclick="delShopItem('${s.id}','${i.id}')">🗑</button>`:''}</div></div>`).join('')||`<p class="g">${t('No data')}</p>`);
+      h+=`<hr><div class="form">${F('si_item','Item (what was bought)')}${F('si_price','Price','number')}${F('si_model','Model (optional)')}${[2,3,4,5].map(n=>F('si_i'+n,'Extra item '+(n-1)+' (optional)')+F('si_p'+n,'Price (optional)','number')).join('')}${F('si_m','Method','text','Cash',METHODS)}${F('si_date','Date','date',today())}<button class="btn" onclick="addShopItem('${s.id}')">${t('Add')}</button></div>`;
+      h+=(s.items.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(i=>ee===i.id?`<div class="card" style="background:#fafafa"><b>✎ Edit item</b><div class="form" style="margin-top:8px">${F('sx_item','Item','text',i.item)}${F('sx_price','Price','number',i.price)}${F('sx_model','Model (optional)','text',i.model||'')}${F('sx_date','Date','date',i.date)}<button class="btn" onclick="saveShopItem('${s.id}','${i.id}')">${t('Save')}</button><button class="dk" onclick="ee=null;render()">Cancel</button></div></div>`:`<div class="hist"><div>${i.date} · <b>${esc(i.item)}</b>${i.model?' · '+esc(i.model):''}</div><div><b>${taka(i.price)}</b>${role==='admin'?` <button class="dk" onclick="ee='${i.id}';render()">✎</button> <button class="dk" style="background:#d71920;color:#fff;border:0" onclick="delShopItem('${s.id}','${i.id}')">🗑</button>`:''}</div></div>`).join('')||`<p class="g">${t('No data')}</p>`);
       if(role==='admin')h+=`<p style="margin:8px 0 0"><button class="dk" style="background:#d71920;color:#fff;border:0" onclick="delShop('${s.id}')">🗑 Delete folder</button></p>`;
     }
     h+='</div>';
@@ -474,12 +474,29 @@ function addShop(){
 }
 function addShopItem(id){
   const s=SH().find(x=>x.id===id);if(!s)return;
-  const item=g('si_item').trim(),price=+g('si_price');
+  const rows=[[g('si_item').trim(),+g('si_price'),true],...[2,3,4,5].map(n=>[g('si_i'+n).trim(),+g('si_p'+n),false])];
+  const bad=rows.some(([n,p,req])=>(req||n||p)&&(!n||!(p>0)));
+  if(bad){err='Item and price are required (leave extra rows empty if not used)';return render()}
+  const date=g('si_date')||today(),model=g('si_model').trim(),m=g('si_m')||'Cash';
+  rows.filter(([n])=>n).forEach(([n,p])=>{
+    const it={id:uid(),item:n,price:p,model,date};
+    s.items.push(it);
+    addTx('expense','Parts Purchase',p,shDesc(s,it),m,date,it.id,'service');
+    log('Shop item',s.name+' - '+n+' '+taka(p));
+  });
+  save();render();
+}
+function shDesc(s,it){return s.name+': '+it.item+(it.model?' ('+it.model+')':'')}
+function saveShopItem(sid,iid){
+  if(!adm())return;
+  const s=SH().find(x=>x.id===sid);if(!s)return;
+  const it=s.items.find(x=>x.id===iid);if(!it)return;
+  const item=g('sx_item').trim(),price=+g('sx_price');
   if(!item||!(price>0)){err='Item and price are required';return render()}
-  const it={id:uid(),item,price,date:g('si_date')||today()};
-  s.items.push(it);
-  addTx('expense','Parts Purchase',price,s.name+': '+item,g('si_m')||'Cash',it.date,it.id,'service');
-  log('Shop item',s.name+' - '+item+' '+taka(price));save();render();
+  const old=it.item+' '+taka(it.price);
+  it.item=item;it.price=price;it.model=g('sx_model').trim();it.date=g('sx_date')||it.date;
+  DB.tx.forEach(x=>{if(x.src===iid){x.amt=price;x.date=it.date;x.desc=shDesc(s,it)}});
+  log('Shop item edited',s.name+' - '+old+' -> '+it.item+' '+taka(it.price));ee=null;save();render();
 }
 function delShopItem(sid,iid){
   if(!adm())return;
