@@ -45,7 +45,7 @@ hr{border:0;border-top:1px solid #eee;margin:12px 0}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script></head>
 <body>
 <header>
-  <div><b><span>Repair</span> Xpert <small style="font-weight:400;font-size:10px">v15</small></b> <button class="lang" id="homeBtn" style="display:none" onclick="goHome()">⌂ Home</button> <span id="secName" class="badge" style="display:none;background:#d71920;color:#fff"></span></div>
+  <div><b><span>Repair</span> Xpert <small style="font-weight:400;font-size:10px">v16</small></b> <button class="lang" id="homeBtn" style="display:none" onclick="goHome()">⌂ Home</button> <span id="secName" class="badge" style="display:none;background:#d71920;color:#fff"></span></div>
   <div><span id="who" style="font-size:13px;margin-right:6px"></span><button class="lang" id="refBtn" style="display:none" onclick="refresh()">⟳</button> <button class="lang" id="logoutBtn" style="display:none" onclick="logout()">Logout</button> <span id="sync" style="font-size:12px;color:#aaa"></span>
   <button class="lang" onclick="lang=lang==='en'?'bn':'en';render()">বাংলা / EN</button></div>
 </header>
@@ -230,10 +230,15 @@ function homeP(){
   <div class="card dark" style="cursor:pointer;padding:22px" onclick="enter('service')"><h3 style="font-size:26px">🔧 ${t('Service')}</h3></div></div>
   <div class="card" style="cursor:pointer;padding:22px;background:linear-gradient(135deg,#6d28d9,#4c1d95);color:#fff;border:0;margin-top:12px" onclick="enter('common')"><h3 style="font-size:26px">⚙ Admin Panel</h3><small>${DB.locks&&DB.locks.admin?'🔒 Password protected':''}</small></div>`;
 }
+function monthDue(S,off){
+  const y=+today().slice(0,4),mo=+today().slice(5,7)-1+off,dt=new Date(y,mo,1);
+  const key=dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0'),L=S.filter(x=>String(x.date).slice(0,7)===key&&x.due>0);
+  return cd((off<0?'Previous Month Due':'Running Month Due')+' ('+MN[dt.getMonth()]+' '+dt.getFullYear()+') · '+L.length+' students',taka(sum(L,x=>x.due)),off<0?'rd':'');
+}
 function secDash(){
   const d=today(),m=d.slice(0,7)+'-01',u=sec,inc=sumTx('income',m,d,u),exp=sumTx('expense',m,d,u),due=sum(DB.emps.filter(e=>e.dept===u).map(eSum),e=>Math.max(e.rem,0));
   const fin=cd('Monthly Income',taka(inc))+cd('Monthly Expenses',taka(exp))+cd('Net Profit',taka(inc-exp),'dark')+cd('Employee Salary Due',taka(due),'rd');
-  if(u==='training'){const S=DB.stu.map(sSum);return `<h2>🎓 ${t('Training')} - ${t('Dashboard')}</h2><div class="grid">${cd('Total Students',S.length,'dark')}${cd('Morning',S.filter(s=>s.batch==='Morning').length)}${cd('Evening',S.filter(s=>s.batch==='Evening').length)}${cd('Total Student Fees',taka(sum(S,s=>s.fee)))}${cd('Total Student Payments',taka(sum(S,s=>s.total)))}${cd('Total Student Due',taka(sum(S,s=>s.due)),'rd')}${fin}</div>`}
+  if(u==='training'){const S=DB.stu.map(sSum);return `<h2>🎓 ${t('Training')} - ${t('Dashboard')}</h2><div class="grid">${cd('Total Students',S.length,'dark')}${cd('Morning',S.filter(s=>s.batch==='Morning').length)}${cd('Evening',S.filter(s=>s.batch==='Evening').length)}${cd('Total Student Fees',taka(sum(S,s=>s.fee)))}${cd('Total Student Payments',taka(sum(S,s=>s.total)))}${cd('Total Student Due',taka(sum(S,s=>s.due)),'rd')}${monthDue(S,-1)}${monthDue(S,0)}${fin}</div>`}
   const J=DB.jobs;return `<h2>🔧 ${t('Service')} - ${t('Dashboard')}</h2><div class="grid">${cd("Today's Service Jobs",J.filter(j=>j.date===d).length,'dark')}${cd('Pending Jobs',J.filter(j=>j.status!=='Delivered').length)}${cd('Delivered Jobs',J.filter(j=>j.status==='Delivered').length)}${cd('Customer Due',taka(sum(J,j=>Math.max(jDue(j),0))),'rd')}${cd('Profit',taka(sum(J,jProfit)))}${fin}</div>`;
 }
 function keep(){const el=document.getElementById('q'),p=el.selectionStart;render();const n=document.getElementById('q');n.focus();n.setSelectionRange(p,p)}
