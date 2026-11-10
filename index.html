@@ -45,7 +45,7 @@ hr{border:0;border-top:1px solid #eee;margin:12px 0}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script></head>
 <body>
 <header>
-  <div><b><span>Repair</span> Xpert <small style="font-weight:400;font-size:10px">v19</small></b> <button class="lang" id="homeBtn" style="display:none" onclick="goHome()">⌂ Home</button> <span id="secName" class="badge" style="display:none;background:#d71920;color:#fff"></span></div>
+  <div><b><span>Repair</span> Xpert <small style="font-weight:400;font-size:10px">v20</small></b> <button class="lang" id="homeBtn" style="display:none" onclick="goHome()">⌂ Home</button> <span id="secName" class="badge" style="display:none;background:#d71920;color:#fff"></span></div>
   <div><span id="who" style="font-size:13px;margin-right:6px"></span><button class="lang" id="refBtn" style="display:none" onclick="refresh()">⟳</button> <button class="lang" id="logoutBtn" style="display:none" onclick="logout()">Logout</button> <span id="sync" style="font-size:12px;color:#aaa"></span>
   <button class="lang" onclick="lang=lang==='en'?'bn':'en';render()">বাংলা / EN</button></div>
 </header>
@@ -174,7 +174,9 @@ const sum=(a,f)=>a.reduce((x,r)=>x+f(r),0);
 const tbl=(h,rows)=>`<div class="tw"><table><tr>${h.map(x=>`<th>${t(x)}</th>`).join('')}</tr>${rows.length?rows.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join(''):`<tr><td colspan="${h.length}">${t('No data')}</td></tr>`}</table></div>`;
 const cd=(l,v,c)=>`<div class="card ${c||''}"><small>${t(l)}</small><h3>${v}</h3></div>`;
 
+function shopClean(){const ids=new Set();(DB.shops||[]).forEach(s=>s.items.forEach(i=>ids.add(i.id)));DB.tx.forEach(x=>{if(x.src&&ids.has(x.src)&&!x.void)x.void=true})}
 function render(){
+  try{shopClean()}catch(e){}
   const hb=document.getElementById('homeBtn'),sn=document.getElementById('secName');
   hb.style.display=sec?'':'none';sn.style.display=sec?'':'none';if(sec)sn.textContent=t(SECN[sec]);
   document.getElementById('nav').innerHTML=(sec?SN[sec]:[]).map(([k,l])=>`<button class="${page===k?'on':''}" onclick="page='${k}';ex=null;render()">${t(l)}</button>`).join('');
@@ -233,12 +235,12 @@ function homeP(){
 function monthDue(S,off){
   const y=+today().slice(0,4),mo=+today().slice(5,7)-1+off,dt=new Date(y,mo,1);
   const key=dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0'),L=S.filter(x=>String(x.date).slice(0,7)===key&&x.due>0);
-  return cd((off<0?'Previous Month Due':'Running Month Due')+' ('+MN[dt.getMonth()]+' '+dt.getFullYear()+') · '+L.length+' students',taka(sum(L,x=>x.due)),off<0?'rd':'');
+  return cd(MN[dt.getMonth()]+' '+dt.getFullYear()+' Admission Due'+(off===0?' (Running)':'')+' · '+L.length+' students',taka(sum(L,x=>x.due)),off<0?'rd':'');
 }
 function secDash(){
   const d=today(),m=d.slice(0,7)+'-01',u=sec,inc=sumTx('income',m,d,u),exp=sumTx('expense',m,d,u),due=sum(DB.emps.filter(e=>e.dept===u).map(eSum),e=>Math.max(e.rem,0));
   const fin=cd('Monthly Income',taka(inc))+cd('Monthly Expenses',taka(exp))+cd('Net Profit',taka(inc-exp),'dark')+cd('Employee Salary Due',taka(due),'rd');
-  if(u==='training'){const S=DB.stu.map(sSum);return `<h2>🎓 ${t('Training')} - ${t('Dashboard')}</h2><div class="grid">${cd('Total Students',S.length,'dark')}${cd('Morning',S.filter(s=>s.batch==='Morning').length)}${cd('Evening',S.filter(s=>s.batch==='Evening').length)}${cd('Total Student Fees',taka(sum(S,s=>s.fee)))}${cd('Total Student Payments',taka(sum(S,s=>s.total)))}${cd('Total Student Due',taka(sum(S,s=>s.due)),'rd')}${monthDue(S,-1)}${monthDue(S,0)}${fin}</div>`}
+  if(u==='training'){const S=DB.stu.map(sSum);return `<h2>🎓 ${t('Training')} - ${t('Dashboard')}</h2><div class="grid">${cd('Total Students',S.length,'dark')}${cd('Morning',S.filter(s=>s.batch==='Morning').length)}${cd('Evening',S.filter(s=>s.batch==='Evening').length)}${cd('Total Student Fees',taka(sum(S,s=>s.fee)))}${cd('Total Student Payments',taka(sum(S,s=>s.total)))}${cd('Total Student Due',taka(sum(S,s=>s.due)),'rd')}${monthDue(S,-2)}${monthDue(S,-1)}${monthDue(S,0)}${fin}</div>`}
   const J=DB.jobs;return `<h2>🔧 ${t('Service')} - ${t('Dashboard')}</h2><div class="grid">${cd("Today's Service Jobs",J.filter(j=>j.date===d).length,'dark')}${cd('Pending Jobs',J.filter(j=>j.status!=='Delivered').length)}${cd('Delivered Jobs',J.filter(j=>j.status==='Delivered').length)}${cd('Customer Due',taka(sum(J,j=>Math.max(jDue(j),0))),'rd')}${cd('Profit',taka(sum(J,jProfit)))}${fin}</div>`;
 }
 function keep(){const el=document.getElementById('q'),p=el.selectionStart;render();const n=document.getElementById('q');n.focus();n.setSelectionRange(p,p)}
@@ -250,7 +252,7 @@ function dashP(){
   const inc=sumTx('income',m,d),exp=sumTx('expense',m,d);
   return `<h2>${t('Overall')} ${t('Dashboard')}</h2><div class="grid">
   ${cd('Total Students',S.length,'dark')}${cd('Morning',S.filter(s=>s.batch==='Morning').length)}${cd('Evening',S.filter(s=>s.batch==='Evening').length)}
-  ${cd('Total Student Fees',taka(sum(S,s=>s.fee)))}${cd('Total Student Payments',taka(sum(S,s=>s.total)))}${cd('Total Student Due',taka(sum(S,s=>s.due)),'rd')}
+  ${cd('Total Student Fees',taka(sum(S,s=>s.fee)))}${cd('Total Student Payments',taka(sum(S,s=>s.total)))}${cd('Total Student Due',taka(sum(S,s=>s.due)),'rd')}${monthDue(S,-2)}${monthDue(S,-1)}${monthDue(S,0)}
   ${cd("Today's Service Jobs",DB.jobs.filter(j=>j.date===d).length,'dark')}${cd('Pending Jobs',DB.jobs.filter(j=>j.status!=='Delivered').length)}${cd('Delivered Jobs',DB.jobs.filter(j=>j.status==='Delivered').length)}
   ${cd('Monthly Income',taka(inc))}${cd('Monthly Expenses',taka(exp))}${cd('Net Profit',taka(inc-exp),'dark')}
   ${cd('Employee Salary Due',taka(sum(DB.emps.map(eSum),e=>Math.max(e.rem,0))),'rd')}${cd('Customer Due',taka(sum(DB.jobs,j=>Math.max(jDue(j),0))),'rd')}</div>`;
@@ -454,13 +456,13 @@ function txP(type){
 }
 const SH=()=>(DB.shops=DB.shops||[]);
 function shopsHtml(){
-  let h=`<div class="row" style="margin:10px 0"><h3 style="margin:0;flex:1">📁 Shops / Folders</h3><button class="btn" style="padding:4px 18px;font-size:22px;line-height:1.2" onclick="shf=!shf;render()">${shf?'×':'+'}</button></div>`;
+  let h=`<div class="row" style="margin:10px 0"><h3 style="margin:0;flex:1">📁 Shops / Folders <small class="g">(memory only, not counted in expenses)</small></h3><button class="btn" style="padding:4px 18px;font-size:22px;line-height:1.2" onclick="shf=!shf;render()">${shf?'×':'+'}</button></div>`;
   if(shf)h+=`<div class="card"><div class="form">${F('sh_name','Shop / Folder name')}<button class="btn" onclick="addShop()">${t('Add')}</button></div></div>`;
   SH().forEach(s=>{
     const open=shx===s.id;
     h+=`<div class="card"><div class="top" onclick="shx=${open?'null':`'${s.id}'`};render()"><div><b>📁 ${esc(s.name)}</b><br><small class="g">${s.items.length} item(s)</small></div><b>${taka(sum(s.items,i=>i.price))}</b></div>`;
     if(open){
-      h+=`<hr><div class="form">${F('si_item','Item (what was bought)')}${F('si_price','Price','number')}${F('si_model','Model (optional)')}${[2,3,4,5].map(n=>F('si_i'+n,'Extra item '+(n-1)+' (optional)')+F('si_p'+n,'Price (optional)','number')).join('')}${F('si_m','Method','text','Cash',METHODS)}${F('si_date','Date','date',today())}<button class="btn" onclick="addShopItem('${s.id}')">${t('Add')}</button></div>`;
+      h+=`<hr><div class="form">${F('si_item','Item (what was bought)')}${F('si_price','Price','number')}${F('si_model','Model (optional)')}${[2,3,4,5].map(n=>F('si_i'+n,'Extra item '+(n-1)+' (optional)')+F('si_p'+n,'Price (optional)','number')).join('')}${F('si_date','Date','date',today())}<button class="btn" onclick="addShopItem('${s.id}')">${t('Add')}</button></div>`;
       h+=(s.items.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(i=>ee===i.id?`<div class="card" style="background:#fafafa"><b>✎ Edit item</b><div class="form" style="margin-top:8px">${F('sx_item','Item','text',i.item)}${F('sx_price','Price','number',i.price)}${F('sx_model','Model (optional)','text',i.model||'')}${F('sx_date','Date','date',i.date)}<button class="btn" onclick="saveShopItem('${s.id}','${i.id}')">${t('Save')}</button><button class="dk" onclick="ee=null;render()">Cancel</button></div></div>`:`<div class="hist"><div>${i.date} · <b>${esc(i.item)}</b>${i.model?' · '+esc(i.model):''}</div><div><b>${taka(i.price)}</b>${role==='admin'?` <button class="dk" onclick="ee='${i.id}';render()">✎</button> <button class="dk" style="background:#d71920;color:#fff;border:0" onclick="delShopItem('${s.id}','${i.id}')">🗑</button>`:''}</div></div>`).join('')||`<p class="g">${t('No data')}</p>`);
       if(role==='admin')h+=`<p style="margin:8px 0 0"><button class="dk" style="background:#d71920;color:#fff;border:0" onclick="delShop('${s.id}')">🗑 Delete folder</button></p>`;
     }
@@ -477,11 +479,10 @@ function addShopItem(id){
   const rows=[[g('si_item').trim(),+g('si_price'),true],...[2,3,4,5].map(n=>[g('si_i'+n).trim(),+g('si_p'+n),false])];
   const bad=rows.some(([n,p,req])=>(req||n||p)&&(!n||!(p>0)));
   if(bad){err='Item and price are required (leave extra rows empty if not used)';return render()}
-  const date=g('si_date')||today(),model=g('si_model').trim(),m=g('si_m')||'Cash';
+  const date=g('si_date')||today(),model=g('si_model').trim();
   rows.filter(([n])=>n).forEach(([n,p])=>{
     const it={id:uid(),item:n,price:p,model,date};
     s.items.push(it);
-    addTx('expense','Parts Purchase',p,shDesc(s,it),m,date,it.id,'service');
     log('Shop item',s.name+' - '+n+' '+taka(p));
   });
   save();render();
@@ -495,21 +496,20 @@ function saveShopItem(sid,iid){
   if(!item||!(price>0)){err='Item and price are required';return render()}
   const old=it.item+' '+taka(it.price);
   it.item=item;it.price=price;it.model=g('sx_model').trim();it.date=g('sx_date')||it.date;
-  DB.tx.forEach(x=>{if(x.src===iid){x.amt=price;x.date=it.date;x.desc=shDesc(s,it)}});
   log('Shop item edited',s.name+' - '+old+' -> '+it.item+' '+taka(it.price));ee=null;save();render();
 }
 function delShopItem(sid,iid){
   if(!adm())return;
   const s=SH().find(x=>x.id===sid);if(!s)return;
   const it=s.items.find(x=>x.id===iid);if(!it)return;
-  if(!confirm('Delete "'+it.item+'" ('+taka(it.price)+')? It will also be removed from Expenses.'))return;
+  if(!confirm('Delete "'+it.item+'" ('+taka(it.price)+')?'))return;
   DB.tx.forEach(x=>{if(x.src===iid)x.void=true});
   s.items=s.items.filter(x=>x.id!==iid);log('Shop item deleted',s.name+' - '+it.item+' '+taka(it.price));save();render();
 }
 function delShop(id){
   if(!adm())return;
   const s=SH().find(x=>x.id===id);if(!s)return;
-  if(!confirm('Delete folder "'+s.name+'" with '+s.items.length+' item(s)? Its items will also be removed from Expenses.'))return;
+  if(!confirm('Delete folder "'+s.name+'" with '+s.items.length+' item(s)?'))return;
   const ids=s.items.map(i=>i.id);
   DB.tx.forEach(x=>{if(x.src&&ids.includes(x.src))x.void=true});
   DB.shops=SH().filter(x=>x.id!==id);shx=null;log('Shop folder deleted',s.name);save();render();
