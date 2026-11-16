@@ -59,7 +59,7 @@ hr{border:0;border-top:1px solid #eee;margin:12px 0}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script></head>
 <body>
 <header>
-  <div><b><span>Repair</span> Xpert <small style="font-weight:400;font-size:10px">v21</small></b> <button class="lang" id="homeBtn" style="display:none" onclick="goHome()">⌂ Home</button> <span id="secName" class="badge" style="display:none;background:#d71920;color:#fff"></span></div>
+  <div><b><span>Repair</span> Xpert <small style="font-weight:400;font-size:10px">v22</small></b> <button class="lang" id="homeBtn" style="display:none" onclick="goHome()">⌂ Home</button> <span id="secName" class="badge" style="display:none;background:#d71920;color:#fff"></span></div>
   <div><span id="who" style="font-size:13px;margin-right:6px"></span><button class="lang" id="refBtn" style="display:none" onclick="refresh()">⟳</button> <button class="lang" id="logoutBtn" style="display:none" onclick="logout()">Logout</button> <span id="sync" style="font-size:12px;color:#aaa"></span>
   <button class="lang" onclick="lang=lang==='en'?'bn':'en';render()">বাংলা / EN</button></div>
 </header>
@@ -561,15 +561,22 @@ function showDoc(html,name,cls){
 }
 function closeDoc(){const o=document.getElementById('docov');if(o)o.remove();document.body.style.overflow=''}
 async function makePdf(name){
-  const el=document.getElementById('docbody');if(!el)return;
+  const src=document.getElementById('docbody');if(!src)return;
   const btn=document.querySelector('#docbar .pdf');if(btn)btn.textContent='Please wait...';
+  const host=document.createElement('div');
+  host.style.cssText='position:fixed;left:0;top:0;width:700px;z-index:-1;background:#fff';
+  const el=src.cloneNode(true);el.style.cssText='margin:0;max-width:none;width:700px;padding:16px;box-sizing:border-box';
+  host.appendChild(el);document.body.appendChild(host);
+  const sy=window.scrollY,ov=document.body.style.overflow;
   try{
     if(!window.html2pdf)await new Promise((ok,no)=>{const sc=document.createElement('script');sc.src='https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';sc.onload=ok;sc.onerror=no;document.head.appendChild(sc)});
-    const blob=await html2pdf().set({margin:8,image:{type:'jpeg',quality:0.95},html2canvas:{scale:2,useCORS:true,backgroundColor:'#ffffff'},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},pagebreak:{mode:['css','legacy']}}).from(el).outputPdf('blob');
+    document.body.style.overflow='';window.scrollTo(0,0);
+    const blob=await html2pdf().set({margin:8,image:{type:'jpeg',quality:0.95},html2canvas:{scale:el.scrollHeight>2500?1.5:2,useCORS:true,backgroundColor:'#ffffff',scrollX:0,scrollY:0},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},pagebreak:{mode:['css','legacy']}}).from(el).outputPdf('blob');
     const f=new File([blob],name+'.pdf',{type:'application/pdf'});
     if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:name})}catch(e){if(!e||e.name!=='AbortError')throw e}}
     else{const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name+'.pdf';document.body.appendChild(a);a.click();a.remove()}
   }catch(e){alert('PDF could not be created. Use Print and choose Save as PDF.')}
+  host.remove();document.body.style.overflow=ov;window.scrollTo(0,sy);
   if(btn)btn.textContent='📄 PDF';
 }
 function reportDoc(){
