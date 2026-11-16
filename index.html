@@ -41,11 +41,25 @@ small.g{color:#777}
 th{background:#000;color:#fff;text-align:left;padding:8px;white-space:nowrap}td{padding:8px;border-bottom:1px solid #eee;white-space:nowrap}
 hr{border:0;border-top:1px solid #eee;margin:12px 0}
 @media print{header,nav,.noprint{display:none!important}body{background:#fff}}
+#docov{position:fixed;inset:0;z-index:9999;background:#e5e5e5;overflow:auto;-webkit-overflow-scrolling:touch}
+#docbar{position:sticky;top:0;display:flex;gap:8px;padding:10px;background:#000;z-index:2}
+#docbar button{flex:1;padding:12px 6px;border:0;border-radius:8px;font-size:16px;font-weight:700;background:#fff;color:#000;cursor:pointer}
+#docbar button.pdf{background:#d71920;color:#fff}
+#docbody{background:#fff;color:#111;max-width:680px;margin:12px auto;padding:16px;font-family:'Noto Sans Bengali',Arial,sans-serif;box-sizing:border-box}
+#docbody .h{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:4px solid #d71920;padding-bottom:10px;gap:10px}
+#docbody .l{font-size:28px;font-weight:800}#docbody .l b{color:#d71920}
+#docbody table{width:100%;border-collapse:collapse;margin-top:12px;font-size:15px;background:#fff}
+#docbody td,#docbody th{padding:8px;border-bottom:1px solid #ddd;text-align:left;white-space:normal;background:#fff;color:#111}
+#docbody th{background:#f3f3f3;font-weight:700}
+#docbody.rc td:last-child{text-align:right}
+#docbody .d td{color:#d71920;font-weight:700;font-size:18px}
+#docbody.rpt .tw{overflow:visible}
+@media print{body>*:not(#docov){display:none!important}#docov{position:static!important;overflow:visible!important;background:#fff!important}#docbar{display:none!important}#docbody{margin:0;max-width:none;padding:0}}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script></head>
 <body>
 <header>
-  <div><b><span>Repair</span> Xpert <small style="font-weight:400;font-size:10px">v20</small></b> <button class="lang" id="homeBtn" style="display:none" onclick="goHome()">⌂ Home</button> <span id="secName" class="badge" style="display:none;background:#d71920;color:#fff"></span></div>
+  <div><b><span>Repair</span> Xpert <small style="font-weight:400;font-size:10px">v21</small></b> <button class="lang" id="homeBtn" style="display:none" onclick="goHome()">⌂ Home</button> <span id="secName" class="badge" style="display:none;background:#d71920;color:#fff"></span></div>
   <div><span id="who" style="font-size:13px;margin-right:6px"></span><button class="lang" id="refBtn" style="display:none" onclick="refresh()">⟳</button> <button class="lang" id="logoutBtn" style="display:none" onclick="logout()">Logout</button> <span id="sync" style="font-size:12px;color:#aaa"></span>
   <button class="lang" onclick="lang=lang==='en'?'bn':'en';render()">বাংলা / EN</button></div>
 </header>
@@ -303,15 +317,14 @@ function saveStu(id){
 }
 function setBno(id){const s=DB.stu.find(x=>x.id===id);if(!s)return;s.bno=g('bn_edit').trim();log('Batch No set',s.code+' '+s.name+' → '+s.bno);save();render()}
 function printStu(id){
-  const s=sSum(DB.stu.find(x=>x.id===id)),w=window.open('');if(!w)return alert('Allow pop-ups to print');
+  const s=sSum(DB.stu.find(x=>x.id===id));
   const row=(k,v)=>`<tr><td style="width:35%;color:#666">${k}</td><td>${esc(v)}</td></tr>`;
   const img=s.photo?`<img src="${s.photo}" style="width:120px;height:145px;object-fit:cover;border:1px solid #999">`:'<div style="width:120px;height:145px;border:1px dashed #999"></div>';
-  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${s.code}</title><style>body{font-family:'Noto Sans Bengali',Arial;max-width:680px;margin:24px auto;padding:0 12px;color:#111}.h{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:4px solid #d71920;padding-bottom:10px}.l{font-size:28px;font-weight:800}.l b{color:#d71920}table{width:100%;border-collapse:collapse;margin-top:12px}td,th{padding:8px;border-bottom:1px solid #ddd;text-align:left}.d td{color:#d71920;font-weight:700}</style></head><body><div class="h"><div><div class="l"><b>Repair</b> Xpert</div>Training and Service Center<h3 style="margin:14px 0 0">STUDENT PROFILE</h3><div>${esc(s.code)}</div></div><div>${img}</div></div><table>${row('Name',s.name)}${row('Phone',s.phone)}${row('Address',s.addr)}${row('Batch',s.batch)}${row('Batch No',s.bno||'-')}${row('Admission date',s.date)}${row('Course fee',taka(s.fee))}${row('Total paid',taka(s.fp))}<tr class="d"><td>Due</td><td>${taka(s.due)}</td></tr></table><h4 style="margin-top:18px">Payment history</h4><table><tr><th>Date</th><th>Type</th><th>Method</th><th>Receipt</th><th style="text-align:right">Amount</th></tr>${s.ps.map(p=>`<tr><td>${p.date}</td><td>${esc(p.kind)}</td><td>${esc(p.method)}</td><td>${p.no}</td><td style="text-align:right">${taka(p.amt)}</td></tr>`).join('')||'<tr><td colspan="5">-</td></tr>'}</table><p style="margin-top:40px;font-size:12px;color:#777">Computer generated document.</p></body></html>`);
-  w.document.close();setTimeout(()=>w.print(),400);
+  showDoc(`<div class="h"><div><div class="l"><b>Repair</b> Xpert</div>Training and Service Center<h3 style="margin:14px 0 0">STUDENT PROFILE</h3><div>${esc(s.code)}</div></div><div>${img}</div></div><table>${row('Name',s.name)}${row('Phone',s.phone)}${row('Address',s.addr)}${row('Batch',s.batch)}${row('Batch No',s.bno||'-')}${row('Admission date',s.date)}${row('Course fee',taka(s.fee))}${row('Total paid',taka(s.fp))}<tr class="d"><td>Due</td><td>${taka(s.due)}</td></tr></table><h4 style="margin-top:18px">Payment history</h4><table><tr><th>Date</th><th>Type</th><th>Method</th><th>Receipt</th><th style="text-align:right">Amount</th></tr>${s.ps.map(p=>`<tr><td>${p.date}</td><td>${esc(p.kind)}</td><td>${esc(p.method)}</td><td>${p.no}</td><td style="text-align:right">${taka(p.amt)}</td></tr>`).join('')||'<tr><td colspan="5">-</td></tr>'}</table><p style="margin-top:40px;font-size:12px;color:#777">Computer generated document.</p>`,'student-'+s.code,'');
 }
 async function setStuPhoto(id,files){const s=DB.stu.find(x=>x.id===id);if(!s||!files||!files[0])return;try{s.photo=await shrink(files[0],400)}catch(e){err='Could not read the image';return render()}log('Student photo set',s.code+' '+s.name);save();render()}
 function delStuPhoto(id){if(!adm())return;const s=DB.stu.find(x=>x.id===id);if(!s||!confirm('Remove photo of '+s.name+'?'))return;delete s.photo;log('Student photo removed',s.code);save();render()}
-function viewStuPhoto(id){const s=DB.stu.find(x=>x.id===id);if(!s||!s.photo)return;const w=window.open('');if(w)w.document.write('<body style="margin:0;background:#000"><img src="'+s.photo+'" style="max-width:100%;display:block;margin:auto"></body>')}
+function viewStuPhoto(id){const s=DB.stu.find(x=>x.id===id);if(!s||!s.photo)return;showDoc('<img src="'+s.photo+'" style="max-width:100%;display:block;margin:auto">','photo-'+s.code,'')}
 function delStu(id){
   if(!adm())return;
   const s=DB.stu.find(x=>x.id===id);if(!s)return;
@@ -539,6 +552,31 @@ function ivcP(){
     ...DB.sal.filter(x=>{const e=DB.emps.find(y=>y.id===x.eid);return !U()||e.dept===U()}).map(x=>{const e=DB.emps.find(y=>y.id===x.eid);return[x.date,x.no,'Salary',esc(e.name),x.amt,'sal',x.id]})].sort((a,b)=>b[0].localeCompare(a[0]));
   return `<h2>${t('Invoices')}</h2>`+tbl(['Date','No','Type','Name','Amount',''],R.map(r=>[r[0],r[1],r[2],r[3],taka(r[4]),`<button class="dk" onclick="doc('${r[5]}','${r[6]}')">${t('Print')} / PDF</button>`]));
 }
+function showDoc(html,name,cls){
+  closeDoc();
+  const nm=String(name).replace(/[^\w.-]/g,'_');
+  const o=document.createElement('div');o.id='docov';
+  o.innerHTML=`<div id="docbar"><button onclick="closeDoc()">← Back</button><button onclick="window.print()">🖨 Print</button><button class="pdf" onclick="makePdf('${nm}')">📄 PDF</button></div><div id="docbody" class="${cls||''}">${html}</div>`;
+  document.body.appendChild(o);document.body.style.overflow='hidden';o.scrollTop=0;
+}
+function closeDoc(){const o=document.getElementById('docov');if(o)o.remove();document.body.style.overflow=''}
+async function makePdf(name){
+  const el=document.getElementById('docbody');if(!el)return;
+  const btn=document.querySelector('#docbar .pdf');if(btn)btn.textContent='Please wait...';
+  try{
+    if(!window.html2pdf)await new Promise((ok,no)=>{const sc=document.createElement('script');sc.src='https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';sc.onload=ok;sc.onerror=no;document.head.appendChild(sc)});
+    const blob=await html2pdf().set({margin:8,image:{type:'jpeg',quality:0.95},html2canvas:{scale:2,useCORS:true,backgroundColor:'#ffffff'},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},pagebreak:{mode:['css','legacy']}}).from(el).outputPdf('blob');
+    const f=new File([blob],name+'.pdf',{type:'application/pdf'});
+    if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:name})}catch(e){if(!e||e.name!=='AbortError')throw e}}
+    else{const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name+'.pdf';document.body.appendChild(a);a.click();a.remove()}
+  }catch(e){alert('PDF could not be created. Use Print and choose Save as PDF.')}
+  if(btn)btn.textContent='📄 PDF';
+}
+function reportDoc(){
+  const c=document.getElementById('app').cloneNode(true);
+  c.querySelectorAll('.noprint,button,input,select').forEach(e=>e.remove());
+  showDoc('<div class="h"><div><div class="l"><b>Repair</b> Xpert</div>Training and Service Center</div><div style="text-align:right">'+today()+'</div></div>'+c.innerHTML,'report-'+rp+'-'+today(),'rpt');
+}
 function doc(kind,id){
   let title,no2,date,party,lines,sum2;
   if(kind==='sp'){const p=DB.sp.find(x=>x.id===id),s=sSum(DB.stu.find(x=>x.id===p.sid)),upto=sum(s.ps.filter(x=>x.kind!=='Instrument'&&DB.sp.indexOf(x)<=DB.sp.indexOf(p)),x=>x.amt);
@@ -548,9 +586,7 @@ function doc(kind,id){
   else{const x=DB.sal.find(y=>y.id===id),e=eSum(DB.emps.find(y=>y.id===x.eid)),upto=sum(DB.sal.filter(y=>y.eid===e.id&&y.month===x.month&&DB.sal.indexOf(y)<=DB.sal.indexOf(x)),y=>y.amt);
     title='SALARY RECEIPT';no2=x.no;date=x.date;party=[['Employee',e.name],['Designation',e.desig],['Phone',e.phone],['Month',x.month]];lines=[['Payment',x.kind+' ('+x.method+')'],['Amount paid',taka(x.amt)]];sum2=[['Salary + Bonus',taka(e.salary+e.bonus)],['Total paid this month',taka(upto)],['Remaining',taka(e.salary+e.bonus-upto),1]]}
   const row=r=>`<tr class="${r[2]?'d':''}"><td>${esc(r[0])}</td><td>${esc(r[1])}</td></tr>`;
-  const w=window.open('','_blank');if(!w)return alert('Allow pop-ups');
-  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${no2}</title><style>body{font-family:'Noto Sans Bengali',Arial;max-width:620px;margin:24px auto;padding:0 12px;color:#111}.h{display:flex;justify-content:space-between;border-bottom:4px solid #d71920;padding-bottom:10px}.l{font-size:28px;font-weight:800}.l b{color:#d71920}table{width:100%;border-collapse:collapse;margin-top:12px}td{padding:8px;border-bottom:1px solid #ddd}td:last-child{text-align:right}.d td{color:#d71920;font-weight:700;font-size:18px}</style></head><body><div class="h"><div><div class="l"><b>Repair</b> Xpert</div>Training and Service Center</div><div style="text-align:right"><b>${title}</b><br>${no2}<br>${date}</div></div><table>${party.map(row).join('')}</table><table>${lines.map(row).join('')}</table><table>${sum2.map(row).join('')}</table><p style="margin-top:40px;font-size:12px;color:#777">Thank you. Computer generated document.</p></body></html>`);
-  w.document.close();setTimeout(()=>w.print(),300);
+  showDoc(`<div class="h"><div><div class="l"><b>Repair</b> Xpert</div>Training and Service Center</div><div style="text-align:right"><b>${title}</b><br>${no2}<br>${date}</div></div><table>${party.map(row).join('')}</table><table>${lines.map(row).join('')}</table><table>${sum2.map(row).join('')}</table><p style="margin-top:40px;font-size:12px;color:#777">Thank you. Computer generated document.</p>`,no2,'rc');
 }
 
 /* ---------- Reports ---------- */
@@ -564,7 +600,7 @@ function dueRows(){
 function dueP(){
   const months=[...new Set(DB.stu.map(x=>String(x.date).slice(0,7)).filter(Boolean))].sort().reverse(),R=dueRows();
   const ml=m=>MN[+m.slice(5,7)-1]+' '+m.slice(0,4);
-  return `<div class="row noprint"><h2 style="flex:1;margin:0">${t('Reports')}</h2>${repTabs()}<button class="dk" onclick="csv()">${t('Export CSV (Excel)')}</button><button class="dk" onclick="window.print()">PDF / ${t('Print')}</button></div>
+  return `<div class="row noprint"><h2 style="flex:1;margin:0">${t('Reports')}</h2>${repTabs()}<button class="dk" onclick="csv()">${t('Export CSV (Excel)')}</button><button class="dk" onclick="reportDoc()">PDF / ${t('Print')}</button></div>
   <div class="form noprint" style="margin:10px 0"><div><label>Admission month (due of this month's admissions)</label><select onchange="dm=this.value;render()"><option value="">All months</option>${months.map(m=>`<option value="${m}" ${dm===m?'selected':''}>${ml(m)}</option>`).join('')}</select></div><div><label>Search (Batch No / ID / Name / Phone)</label><input value="${esc(dq)}" onchange="dq=this.value;render()" onkeydown="if(event.key==='Enter')this.blur()"></div><label style="margin:0;font-size:14px;color:#111"><input type="checkbox" style="width:auto" ${dbo?'checked':''} onchange="dbo=this.checked;render()"> ${lang==='bn'?'শুধু ব্যাচ নাম্বার':'Batch No only'}</label></div>
   <div class="grid">${cd('Students with due',R.length)}${cd('Total due',taka(sum(R,x=>x.due)),'rd')}</div>
   <h3 style="margin-top:14px">Due List${dm?' - '+ml(dm):''}</h3>${tbl(['ID','Name','Phone','Batch','Batch No','Admission','Fee','Paid','Due'],R.map(x=>[esc(x.code),esc(x.name),esc(x.phone||''),esc(x.batch||''),esc(x.bno||''),x.date,taka(x.fee),taka(x.fp),'<b style="color:#d71920">'+taka(x.due)+'</b>']))}`;
@@ -574,7 +610,7 @@ function dueP(){
   const[f,to]=rng(rp),L=liveU().filter(x=>x.date>=f&&x.date<=to),inc=sum(L.filter(x=>x.type==='income'),x=>x.amt),exp=sum(L.filter(x=>x.type==='expense'),x=>x.amt);
   const by=(type)=>{const c={};L.filter(x=>x.type===type).forEach(x=>c[x.cat]=(c[x.cat]||0)+x.amt);return Object.entries(c).map(([k,v])=>[k,taka(v)])};
   const S=DB.stu.map(sSum),J=DB.jobs,jd=J.filter(j=>j.delivered&&j.delivered>=f&&j.delivered<=to);
-  return `<div class="row noprint"><h2 style="flex:1;margin:0">${t('Reports')}</h2>${repTabs()}<button class="dk" onclick="csv()">${t('Export CSV (Excel)')}</button><button class="dk" onclick="window.print()">PDF / ${t('Print')}</button></div>
+  return `<div class="row noprint"><h2 style="flex:1;margin:0">${t('Reports')}</h2>${repTabs()}<button class="dk" onclick="csv()">${t('Export CSV (Excel)')}</button><button class="dk" onclick="reportDoc()">PDF / ${t('Print')}</button></div>
   <p><b>${f}</b> → <b>${to}</b> (Asia/Dhaka)</p><div class="grid">${cd('Income',taka(inc))}${cd('Expense',taka(exp))}${cd('Profit & Loss',taka(inc-exp),inc-exp>=0?'dark':'rd')}</div>
   <h3>Income</h3>${tbl(['Category','Amount'],by('income'))}<h3 style="margin-top:14px">Expense</h3>${tbl(['Category','Amount'],by('expense'))}
   ${U()==='service'?'':'<h3 style="margin-top:14px">Student Report</h3>'}${U()==='service'?'':tbl(['New admissions','Total students','Total fees','Total paid','Total due'],[[S.filter(s=>s.date>=f&&s.date<=to).length,S.length,taka(sum(S,s=>s.fee)),taka(sum(S,s=>s.total)),taka(sum(S,s=>s.due))]])}
