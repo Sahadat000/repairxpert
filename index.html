@@ -63,7 +63,7 @@ hr{border:0;border-top:1px solid #eee;margin:12px 0}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script></head>
 <body>
 <header>
-  <div><b><span>Repair</span> Xpert <small style="font-weight:400;font-size:10px">v25</small></b> <button class="lang" id="homeBtn" style="display:none" onclick="goHome()">⌂ Home</button> <span id="secName" class="badge" style="display:none;background:#d71920;color:#fff"></span></div>
+  <div><b><span>Repair</span> Xpert <small style="font-weight:400;font-size:10px">v26</small></b> <button class="lang" id="homeBtn" style="display:none" onclick="goHome()">⌂ Home</button> <span id="secName" class="badge" style="display:none;background:#d71920;color:#fff"></span></div>
   <div><span id="who" style="font-size:13px;margin-right:6px"></span><button class="lang" id="refBtn" style="display:none" onclick="refresh()">⟳</button> <button class="lang" id="logoutBtn" style="display:none" onclick="logout()">Logout</button> <span id="sync" style="font-size:12px;color:#aaa"></span>
   <button class="lang" onclick="lang=lang==='en'?'bn':'en';render()">বাংলা / EN</button></div>
 </header>
@@ -561,7 +561,7 @@ let _certImg=null;
 function certOrd(n){n=String(n).trim();if(!/^\d+$/.test(n))return n;const v=+n,r=v%100,e=r>=11&&r<=13?'th':({1:'st',2:'nd',3:'rd'})[v%10]||'th';return v+e}
 async function certDraw(){
   const name=g('ct_name').trim(),bno=certOrd(g('ct_bno')),year=g('ct_year').trim();
-  const bf=g('ct_font')||'Marcellus';
+  const bf=g('ct_font')||'Cinzel';
   try{await Promise.all([document.fonts.load('600 80px Cinzel'),document.fonts.load('600 60px "'+bf+'"')])}catch(e){}
   if(!_certImg){_certImg=await new Promise((ok,no)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=no;i.src=CERT_BG})}
   const c=document.createElement('canvas');c.width=1600;c.height=1129;const x=c.getContext('2d');
@@ -587,7 +587,7 @@ async function certDraw(){
 async function certDlg(id){
   const s=DB.stu.find(x=>x.id===id);if(!s)return;
   const st=document.createElement('style');st.id='certpg';st.textContent='@media print{@page{size:A4 landscape;margin:0}}';document.head.appendChild(st);
-  showDoc(`<div class="nopdf" style="padding:12px"><div class="form">${F('ct_name','Name','text',s.name)}${F('ct_bno','Batch No','text',s.bno||'')}${F('ct_year','Year','text',today().slice(0,4))}${F('ct_font','Batch/Year font','text','Marcellus',['Marcellus','Cinzel','Cormorant SC','Cormorant Garamond','Playfair Display'])}<button class="btn" onclick="certDraw()">Update certificate</button></div></div><img id="certimg" class="cert-img" alt="certificate">`,'certificate-'+s.code,'cert');
+  showDoc(`<div class="nopdf" style="padding:12px"><div class="form">${F('ct_name','Name','text',s.name)}${F('ct_bno','Batch No','text',s.bno||'')}${F('ct_year','Year','text',today().slice(0,4))}${F('ct_font','Batch/Year font','text','Cinzel',['Cinzel','Marcellus','Cormorant SC','Cormorant Garamond','Playfair Display'])}<button class="btn" onclick="certDraw()">Update certificate</button></div></div><img id="certimg" class="cert-img" alt="certificate">`,'certificate-'+s.code,'cert');
   certDraw();
 }
 function showDoc(html,name,cls){
@@ -602,15 +602,15 @@ async function makePdf(name){
   const src=document.getElementById('docbody');if(!src)return;
   const btn=document.querySelector('#docbar .pdf');if(btn)btn.textContent='Please wait...';
   const host=document.createElement('div');
-  host.style.cssText='position:fixed;left:0;top:0;width:'+(src.classList.contains('cert')?1122:700)+'px;z-index:-1;background:#fff';
+  host.style.cssText='position:fixed;left:0;top:0;width:'+(src.classList.contains('cert')?1123:700)+'px;z-index:-1;background:#fff';
   const cert=src.classList.contains('cert');
-  const el=src.cloneNode(true);el.querySelectorAll('.nopdf').forEach(n=>n.remove());el.style.cssText=cert?'margin:0;max-width:none;width:1122px;padding:0;box-sizing:border-box;background:#000':'margin:0;max-width:none;width:700px;padding:16px;box-sizing:border-box';
+  const el=src.cloneNode(true);el.querySelectorAll('.nopdf').forEach(n=>n.remove());el.style.cssText=cert?'margin:0;max-width:none;width:1123px;height:791px;overflow:hidden;padding:0;box-sizing:border-box;background:#000':'margin:0;max-width:none;width:700px;padding:16px;box-sizing:border-box';
   host.appendChild(el);document.body.appendChild(host);
   const sy=window.scrollY,ov=document.body.style.overflow;
   try{
     if(!window.html2pdf)await new Promise((ok,no)=>{const sc=document.createElement('script');sc.src='https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';sc.onload=ok;sc.onerror=no;document.head.appendChild(sc)});
     document.body.style.overflow='';window.scrollTo(0,0);
-    const blob=await html2pdf().set({margin:cert?0:8,image:{type:'jpeg',quality:0.95},html2canvas:{scale:cert?1.6:(el.scrollHeight>2500?1.5:2),useCORS:true,backgroundColor:cert?'#000000':'#ffffff',scrollX:0,scrollY:0},jsPDF:{unit:'mm',format:'a4',orientation:cert?'landscape':'portrait'},pagebreak:{mode:['css','legacy']}}).from(el).outputPdf('blob');
+    const blob=await html2pdf().set({margin:cert?0:8,image:{type:'jpeg',quality:0.95},html2canvas:{scale:cert?1.6:(el.scrollHeight>2500?1.5:2),useCORS:true,backgroundColor:cert?'#000000':'#ffffff',scrollX:0,scrollY:0},jsPDF:cert?{unit:'px',format:[1123,791],orientation:'landscape',hotfixes:['px_scaling']}:{unit:'mm',format:'a4',orientation:'portrait'},pagebreak:{mode:['css','legacy']}}).from(el).outputPdf('blob');
     const f=new File([blob],name+'.pdf',{type:'application/pdf'});
     if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:name})}catch(e){if(!e||e.name!=='AbortError')throw e}}
     else{const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name+'.pdf';document.body.appendChild(a);a.click();a.remove()}
