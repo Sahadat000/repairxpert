@@ -59,11 +59,11 @@ hr{border:0;border-top:1px solid #eee;margin:12px 0}
 @media print{.nopdf{display:none!important}}
 @media print{body>*:not(#docov){display:none!important}#docov{position:static!important;overflow:visible!important;background:#fff!important}#docbar{display:none!important}#docbody{margin:0;max-width:none;padding:0}}
 </style>
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Cormorant+Garamond:wght@700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Cormorant+Garamond:wght@500;600;700&family=Marcellus&family=Playfair+Display:wght@600&family=Cormorant+SC:wght@600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script></head>
 <body>
 <header>
-  <div><b><span>Repair</span> Xpert <small style="font-weight:400;font-size:10px">v23</small></b> <button class="lang" id="homeBtn" style="display:none" onclick="goHome()">⌂ Home</button> <span id="secName" class="badge" style="display:none;background:#d71920;color:#fff"></span></div>
+  <div><b><span>Repair</span> Xpert <small style="font-weight:400;font-size:10px">v25</small></b> <button class="lang" id="homeBtn" style="display:none" onclick="goHome()">⌂ Home</button> <span id="secName" class="badge" style="display:none;background:#d71920;color:#fff"></span></div>
   <div><span id="who" style="font-size:13px;margin-right:6px"></span><button class="lang" id="refBtn" style="display:none" onclick="refresh()">⟳</button> <button class="lang" id="logoutBtn" style="display:none" onclick="logout()">Logout</button> <span id="sync" style="font-size:12px;color:#aaa"></span>
   <button class="lang" onclick="lang=lang==='en'?'bn':'en';render()">বাংলা / EN</button></div>
 </header>
@@ -561,12 +561,13 @@ let _certImg=null;
 function certOrd(n){n=String(n).trim();if(!/^\d+$/.test(n))return n;const v=+n,r=v%100,e=r>=11&&r<=13?'th':({1:'st',2:'nd',3:'rd'})[v%10]||'th';return v+e}
 async function certDraw(){
   const name=g('ct_name').trim(),bno=certOrd(g('ct_bno')),year=g('ct_year').trim();
-  try{await Promise.all([document.fonts.load('600 80px Cinzel'),document.fonts.load('700 60px "Cormorant Garamond"')])}catch(e){}
+  const bf=g('ct_font')||'Marcellus';
+  try{await Promise.all([document.fonts.load('600 80px Cinzel'),document.fonts.load('600 60px "'+bf+'"')])}catch(e){}
   if(!_certImg){_certImg=await new Promise((ok,no)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=no;i.src=CERT_BG})}
   const c=document.createElement('canvas');c.width=1600;c.height=1129;const x=c.getContext('2d');
   x.drawImage(_certImg,0,0,1600,1129);
   x.textAlign='center';x.textBaseline='alphabetic';
-  const badge=(txt,size,base)=>{if(!txt)return;let sz=size;x.font='700 '+sz+'px "Cormorant Garamond",Georgia,serif';const w=x.measureText(txt).width;if(w>150){sz=sz*150/w;x.font='700 '+sz+'px "Cormorant Garamond",Georgia,serif'}x.fillStyle='#dcba7e';x.fillText(txt,196,base)};
+  const badge=(txt,size,base)=>{if(!txt)return;let sz=size;const ff=()=>'600 '+sz+'px "'+bf+'",Georgia,serif';x.font=ff();const w=x.measureText(txt).width;if(w>150){sz=sz*150/w;x.font=ff()}x.fillStyle='#dcba7e';x.fillText(txt,196,base)};
   badge(bno,54,170);badge(year,63,288);
   if(name){
     const latin=!/[^\x00-\x7F]/.test(name);
@@ -586,7 +587,7 @@ async function certDraw(){
 async function certDlg(id){
   const s=DB.stu.find(x=>x.id===id);if(!s)return;
   const st=document.createElement('style');st.id='certpg';st.textContent='@media print{@page{size:A4 landscape;margin:0}}';document.head.appendChild(st);
-  showDoc(`<div class="nopdf" style="padding:12px"><div class="form">${F('ct_name','Name','text',s.name)}${F('ct_bno','Batch No','text',s.bno||'')}${F('ct_year','Year','text',today().slice(0,4))}<button class="btn" onclick="certDraw()">Update certificate</button></div></div><img id="certimg" class="cert-img" alt="certificate">`,'certificate-'+s.code,'cert');
+  showDoc(`<div class="nopdf" style="padding:12px"><div class="form">${F('ct_name','Name','text',s.name)}${F('ct_bno','Batch No','text',s.bno||'')}${F('ct_year','Year','text',today().slice(0,4))}${F('ct_font','Batch/Year font','text','Marcellus',['Marcellus','Cinzel','Cormorant SC','Cormorant Garamond','Playfair Display'])}<button class="btn" onclick="certDraw()">Update certificate</button></div></div><img id="certimg" class="cert-img" alt="certificate">`,'certificate-'+s.code,'cert');
   certDraw();
 }
 function showDoc(html,name,cls){
@@ -601,9 +602,9 @@ async function makePdf(name){
   const src=document.getElementById('docbody');if(!src)return;
   const btn=document.querySelector('#docbar .pdf');if(btn)btn.textContent='Please wait...';
   const host=document.createElement('div');
-  host.style.cssText='position:fixed;left:0;top:0;width:'+(src.classList.contains('cert')?1000:700)+'px;z-index:-1;background:#fff';
+  host.style.cssText='position:fixed;left:0;top:0;width:'+(src.classList.contains('cert')?1122:700)+'px;z-index:-1;background:#fff';
   const cert=src.classList.contains('cert');
-  const el=src.cloneNode(true);el.querySelectorAll('.nopdf').forEach(n=>n.remove());el.style.cssText=cert?'margin:0;max-width:none;width:1000px;padding:0;box-sizing:border-box;background:#000':'margin:0;max-width:none;width:700px;padding:16px;box-sizing:border-box';
+  const el=src.cloneNode(true);el.querySelectorAll('.nopdf').forEach(n=>n.remove());el.style.cssText=cert?'margin:0;max-width:none;width:1122px;padding:0;box-sizing:border-box;background:#000':'margin:0;max-width:none;width:700px;padding:16px;box-sizing:border-box';
   host.appendChild(el);document.body.appendChild(host);
   const sy=window.scrollY,ov=document.body.style.overflow;
   try{
