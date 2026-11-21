@@ -63,7 +63,7 @@ hr{border:0;border-top:1px solid #eee;margin:12px 0}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script></head>
 <body>
 <header>
-  <div><b><span>Repair</span> Xpert <small style="font-weight:400;font-size:10px">v26</small></b> <button class="lang" id="homeBtn" style="display:none" onclick="goHome()">⌂ Home</button> <span id="secName" class="badge" style="display:none;background:#d71920;color:#fff"></span></div>
+  <div><b><span>Repair</span> Xpert <small style="font-weight:400;font-size:10px">v27</small></b> <button class="lang" id="homeBtn" style="display:none" onclick="goHome()">⌂ Home</button> <span id="secName" class="badge" style="display:none;background:#d71920;color:#fff"></span></div>
   <div><span id="who" style="font-size:13px;margin-right:6px"></span><button class="lang" id="refBtn" style="display:none" onclick="refresh()">⟳</button> <button class="lang" id="logoutBtn" style="display:none" onclick="logout()">Logout</button> <span id="sync" style="font-size:12px;color:#aaa"></span>
   <button class="lang" onclick="lang=lang==='en'?'bn':'en';render()">বাংলা / EN</button></div>
 </header>
@@ -75,7 +75,7 @@ const BN={'Dashboard':'ড্যাশবোর্ড','Students':'স্টু�
 'Total Students':'মোট স্টুডেন্ট','Morning':'সকাল','Evening':'সন্ধ্যা','Total Student Fees':'মোট কোর্স ফি','Total Student Payments':'মোট জমা','Total Student Due':'মোট বকেয়া',"Today's Service Jobs":'আজকের সার্ভিস জব','Pending Jobs':'পেন্ডিং জব','Delivered Jobs':'ডেলিভারি হয়েছে','Monthly Income':'মাসিক আয়','Monthly Expenses':'মাসিক খরচ','Net Profit':'নিট লাভ','Employee Salary Due':'কর্মচারী বেতন বাকি','Customer Due':'কাস্টমার বাকি',
 'Name':'নাম','Phone':'ফোন','Address':'ঠিকানা','Batch':'ব্যাচ','Course Fee':'কোর্স ফি','Date':'তারিখ','Amount':'টাকা','Method':'মাধ্যম','Save':'সংরক্ষণ','Add Payment':'পেমেন্ট যোগ','Payment History':'পেমেন্ট হিস্টরি','Receipt':'রসিদ','Invoice':'ইনভয়েস','Print':'প্রিন্ট','Status':'স্ট্যাটাস','Technician':'টেকনিশিয়ান','Problem':'সমস্যা','Parts Cost':'পার্টস খরচ','Selling Price':'বিক্রয় মূল্য','Profit':'লাভ','Designation':'পদবী','Salary':'বেতন','Bonus':'বোনাস','Advance':'অগ্রিম','Remaining':'বাকি','Category':'ক্যাটাগরি','Description':'বিবরণ','Add':'যোগ করুন','Supplier':'সরবরাহকারী','Quantity':'পরিমাণ','Purchase Price':'ক্রয়মূল্য','Low Stock':'স্টক কম','Activity Log':'অ্যাক্টিভিটি লগ','Backup':'ব্যাকআপ','Restore':'রিস্টোর',
 'Daily':'দৈনিক','Weekly':'সাপ্তাহিক','Monthly':'মাসিক','Yearly':'বার্ষিক','Received':'গ্রহণ করা হয়েছে','In Progress':'চলমান','Ready for Delivery':'ডেলিভারির জন্য প্রস্তুত','Delivered':'ডেলিভারি হয়েছে','Cash':'নগদ','Pending':'পেন্ডিং','Delivery History':'ডেলিভারি হিস্টরি','New Admission':'নতুন ভর্তি','Receive Job':'জব গ্রহণ','Search name / phone / ID':'নাম / ফোন / আইডি খুঁজুন','All batches':'সব ব্যাচ','Due only':'শুধু বকেয়া','Due':'বাকি','Paid':'জমা','No data':'কোনো তথ্য নেই','Total':'মোট','Expense':'খরচ','Export CSV (Excel)':'এক্সেল এক্সপোর্ট','Payment type':'পেমেন্টের ধরন','Phone Model':'ফোন মডেল','Estimated Cost':'আনুমানিক খরচ','Additional Expense':'অতিরিক্ত খরচ','Training':'ট্রেনিং','Photos':'ছবি','Batch':'ব্যাচ','Date':'তারিখ','Course Fee':'কোর্স ফি','Student Photo (optional)':'স্টুডেন্টের ছবি (ঐচ্ছিক)','Change photo':'ছবি পরিবর্তন','Add student photo':'স্টুডেন্টের ছবি যোগ করুন','Add Photo':'ছবি যোগ করুন','Caption (optional)':'ক্যাপশন (ঐচ্ছিক)','Service':'সার্ভিস','Common / Admin':'কমন / অ্যাডমিন','Department':'বিভাগ','training':'ট্রেনিং','service':'সার্ভিস','common':'কমন','Overall':'সামগ্রিক'};
-let lang='en',page='dash',role='admin',sec=null,unl={},jt='pending',rp='monthly',dm='',dq='',shf=false,shx=null,sf=0,jf=0,ef=0,pf=0,ex=null,q='',bf='',dueOnly=false,bo=false,dbo=false,ee=null,err='';
+let lang='en',page='dash',role='admin',sec=null,unl={},jt='pending',rp='monthly',dm='',dq='',ry='',rmn='',shf=false,shx=null,sf=0,jf=0,ef=0,pf=0,ex=null,q='',bf='',dueOnly=false,bo=false,dbo=false,ee=null,err='';
 const t=k=>lang==='bn'&&BN[k]?BN[k]:k;
 const taka=n=>'৳ '+Number(n||0).toLocaleString('en-IN');
 const today=()=>new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Dhaka'});
@@ -636,9 +636,15 @@ function doc(kind,id){
 }
 
 /* ---------- Reports ---------- */
-function rng(p){const d=today();let s=d;if(p==='weekly'){const x=new Date(d+'T00:00:00');x.setDate(x.getDate()-6);s=x.toLocaleDateString('en-CA')}else if(p==='monthly')s=d.slice(0,7)+'-01';else if(p==='yearly')s=d.slice(0,4)+'-01-01';return[s,d]}
+function rng(p){const d=today();let s=d;if(p==='pick'&&ry){if(rmn)return[ry+'-'+rmn+'-01',ry+'-'+rmn+'-'+String(new Date(+ry,+rmn,0).getDate()).padStart(2,'0')];return[ry+'-01-01',ry+'-12-31']}if(p==='weekly'){const x=new Date(d+'T00:00:00');x.setDate(x.getDate()-6);s=x.toLocaleDateString('en-CA')}else if(p==='monthly')s=d.slice(0,7)+'-01';else if(p==='yearly')s=d.slice(0,4)+'-01-01';return[s,d]}
 const MN=['January','February','March','April','May','June','July','August','September','October','November','December'];
-function repTabs(){return `<span class="tabs">${['daily','weekly','monthly','yearly',...(U()==='service'?[]:['due'])].map(p=>`<button class="${rp===p?'on':''}" onclick="rp='${p}';render()">${t(p[0].toUpperCase()+p.slice(1))}</button>`).join(' ')}</span>`}
+function repPick(){
+  const cy=today().slice(0,4),ys=new Set([cy]);
+  DB.tx.forEach(x=>{if(x.date)ys.add(String(x.date).slice(0,4))});DB.stu.forEach(x=>{if(x.date)ys.add(String(x.date).slice(0,4))});DB.jobs.forEach(x=>{if(x.date)ys.add(String(x.date).slice(0,4))});
+  const L=[...ys].filter(y=>/^\d{4}$/.test(y)).sort().reverse();
+  return `<span class="tabs"><select style="max-width:130px" onchange="ry=this.value;if(!ry)rmn='';rp=ry?'pick':'monthly';render()"><option value="">Past year...</option>${L.map(y=>`<option value="${y}" ${ry===y?'selected':''}>${y}</option>`).join('')}</select>${ry?`<select style="max-width:140px" onchange="rmn=this.value;render()"><option value="">Whole year</option>${MN.map((m,i)=>{const v=String(i+1).padStart(2,'0');return `<option value="${v}" ${rmn===v?'selected':''}>${m}</option>`}).join('')}</select>`:''}</span>`;
+}
+function repTabs(){return `<span class="tabs">${['daily','weekly','monthly','yearly',...(U()==='service'?[]:['due'])].map(p=>`<button class="${rp===p?'on':''}" onclick="rp='${p}';ry='';rmn='';render()">${t(p[0].toUpperCase()+p.slice(1))}</button>`).join(' ')}</span>`}
 function dueRows(){
   const q=dq.trim().toLowerCase();
   return DB.stu.map(sSum).filter(x=>x.due>0&&(!dm||String(x.date).slice(0,7)===dm)&&(!q||(dbo?String(x.bno||'').toLowerCase()===q:(x.code+' '+x.name+' '+x.phone+' '+x.batch+' '+(x.bno||'')).toLowerCase().includes(q)))).sort((a,b)=>String(a.code).localeCompare(String(b.code),undefined,{numeric:true}));
@@ -656,7 +662,7 @@ function dueP(){
   const[f,to]=rng(rp),L=liveU().filter(x=>x.date>=f&&x.date<=to),inc=sum(L.filter(x=>x.type==='income'),x=>x.amt),exp=sum(L.filter(x=>x.type==='expense'),x=>x.amt);
   const by=(type)=>{const c={};L.filter(x=>x.type===type).forEach(x=>c[x.cat]=(c[x.cat]||0)+x.amt);return Object.entries(c).map(([k,v])=>[k,taka(v)])};
   const S=DB.stu.map(sSum),J=DB.jobs,jd=J.filter(j=>j.delivered&&j.delivered>=f&&j.delivered<=to);
-  return `<div class="row noprint"><h2 style="flex:1;margin:0">${t('Reports')}</h2>${repTabs()}<button class="dk" onclick="csv()">${t('Export CSV (Excel)')}</button><button class="dk" onclick="reportDoc()">PDF / ${t('Print')}</button></div>
+  return `<div class="row noprint"><h2 style="flex:1;margin:0">${t('Reports')}</h2>${repTabs()}${repPick()}<button class="dk" onclick="csv()">${t('Export CSV (Excel)')}</button><button class="dk" onclick="reportDoc()">PDF / ${t('Print')}</button></div>
   <p><b>${f}</b> → <b>${to}</b> (Asia/Dhaka)</p><div class="grid">${cd('Income',taka(inc))}${cd('Expense',taka(exp))}${cd('Profit & Loss',taka(inc-exp),inc-exp>=0?'dark':'rd')}</div>
   <h3>Income</h3>${tbl(['Category','Amount'],by('income'))}<h3 style="margin-top:14px">Expense</h3>${tbl(['Category','Amount'],by('expense'))}
   ${U()==='service'?'':'<h3 style="margin-top:14px">Student Report</h3>'}${U()==='service'?'':tbl(['New admissions','Total students','Total fees','Total paid','Total due'],[[S.filter(s=>s.date>=f&&s.date<=to).length,S.length,taka(sum(S,s=>s.fee)),taka(sum(S,s=>s.total)),taka(sum(S,s=>s.due))]])}
